@@ -176,4 +176,63 @@ export class GitHubClient {
 			body: JSON.stringify({ title, body, labels }),
 		});
 	}
+
+	// ─── Pull Requests : approbations formelles & cycle de vie ───
+
+	async listPullRequests(owner, repoName, state = "open") {
+		return this.request(
+			`/repos/${owner}/${repoName}/pulls?state=${state}&sort=updated&direction=desc&per_page=50`,
+		);
+	}
+
+	/** Scan multi-dépôts : renvoie les PRs ouvertes, annotées _owner/_repo. */
+	async listPullRequestsAcrossRepos(owner, repoNames, limit = 15) {
+		const names = (repoNames || []).slice(0, limit);
+		const results = await Promise.all(
+			names.map(async (name) => {
+				try {
+					const prs = await this.listPullRequests(owner, name);
+					return prs.map((pr) => ({ ...pr, _owner: owner, _repo: name }));
+				} catch (_) {
+					return [];
+				}
+			}),
+		);
+		return results
+			.flat()
+			.sort((a, b) =>
+				(b.updated_at || "").localeCompare(a.updated_at || ""),
+			);
+	}
+
+	/** Approbation formelle : review APPROVE sans fusion. */
+	async approvePullRequest(owner, repoName, number) {
+		return this.request(
+			`/repos/${owner}/${repoName}/pulls/${number}/reviews`,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ event: "APPROVE" }),
+			},
+		);
+	}
+
+	async mergePullRequest(owner, repoName, number, mergeMethod = "squash") {
+		return this.request(
+			`/repos/${owner}/${repoName}/pulls/${number}/merge`,
+			{
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ merge_method: mergeMethod }),
+			},
+		);
+	}
+
+	async closePullRequest(owner, repoName, number) {
+		return this.request(`/repos/${owner}/${repoName}/pulls/${number}`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ state: "closed" }),
+		});
+	}
 }

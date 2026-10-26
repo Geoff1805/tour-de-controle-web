@@ -15,6 +15,7 @@ class TourDeControleApp {
 		this.privateCatalog = null;
 		this.currentUser = null;
 		this.repos = [];
+		this.approvals = [];
 		this.docsList = [];
 		this.activeDocPath = "rules/global.md";
 		this.activeDocSha = null;
@@ -141,6 +142,8 @@ class TourDeControleApp {
 				this.switchTab(tabId);
 			});
 		});
+
+		this.bindApprovalsEvents();
 
 		// Filtres Dashboard
 		document
@@ -391,6 +394,171 @@ class TourDeControleApp {
 		document.querySelectorAll(".tab-panel").forEach((p) => {
 			p.classList.toggle("hidden", p.id !== `tab-${tabId}`);
 		});
+
+		if (tabId === "approvals") {
+			this.loadApprovals();
+		}
+	}
+
+	// ─── Approbations GitHub : scan multi-dépôts des Pull Requests ───
+
+	bindApprovalsEvents() {
+		document
+			.getElementById("btn-refresh-approvals")
+			?.addEventListener("click", () => this.loadApprovals(true));
+		document
+			.getElementById("approvals-list")
+			?.addEventListener("click", (e) => {
+				const btn = e.target.closest("button[data-pr-action]");
+				if (!btn) return;
+				this.handlePrAction(
+					btn.getAttribute("data-pr-action"),
+					btn.getAttribute("data-pr-owner"),
+					btn.getAttribute("data-pr-repo"),
+					Number(btn.getAttribute("data-pr-number")),
+					btn,
+				);
+			});
+	}
+
+	escapePrText(text) {
+		return String(text || "")
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;");
+	}
+
+	async loadApprovals(force = false) {
+		const list = document.getElementById("approvals-list");
+		if (!list) return;
+		if (!this.gh.isAuthenticated()) {
+			list.innerHTML = `
+				<div class="panel-card" style="text-align: center; padding: 32px;">
+					<p style="margin-bottom: 12px;">🔐 Connectez-vous avec votre PAT GitHub (Crédentiels) pour scanner et valider les Pull Requests.</p>
+					<button type="button" class="btn btn-primary btn-sm" id="btn-approvals-open-settings">⚙️ Gérer mes Crédentiels</button>
+				</div>`;
+			document
+				.getElementById("btn-approvals-open-settings")
+				?.addEventListener("click", () => this.openSettings());
+			return;
+		}
+		if (this._approvalsLoading && !force) return;
+		this._approvalsLoading = true;
+		list.innerHTML = `<div class="panel-card">⏳ Scan des Pull Requests ouvertes sur vos dépôts...</div>`;
+		try {
+			if (!this.currentUser) {
+				this.currentUser = await this.gh.getCurrentUser();
+			}
+			const owner = this.currentUser.login;
+			let repoNames = (this.repos || [])
+				.filter((r) => !r.fork)
+				.map((r) => r.name)
+				.slice(0, 15);
+			if (repoNames.length === 0) {
+				this.repos = await this.gh.listUserRepos();
+				repoNames = this.repos
+					.filter((r) => !r.fork)
+					.map((r) => r.name)
+					.slice(0, 15);
+			}
+			const prs = await this.gh.listPullRequestsAcrossRepos(
+				owner,
+				repoNames,
+			);
+			this.approvals = prs;
+			const counter = document.getElementById("header-pr-count");
+			if (counter) counter.textContent = String(prs.length);
+			this.renderApprovals(prs);
+		} catch (err) {
+			console.error("Erreur scan approbations :", err);
+			this.showToast(`Échec du scan des PRs : ${err.message}`, "error");
+			list.innerHTML = `<div class="panel-card" style="border: 1px solid var(--accent-red);">❌ ${this.escapePrText(err.message)}</div>`;
+		} finally {
+			this._approvalsLoading = false;
+		}
+	}
+
+	renderApprovals(prs) {
+		const list = document.getElementById("approvals-list");
+		if (!list) return;
+		if (!prs.length) {
+			list.innerHTML = `
+				<div class="panel-card" style="text-align: center; padding: 28px;">
+					🎉 Aucune Pull Request ouverte. L'écosystème est à jour — les agents n'attendent aucune validation.
+				</div>`;
+			return;
+		}
+		list.innerHTML = prs
+			.map((pr) => {
+				const owner = pr._owner || "";
+				const repo = pr._repo || "";
+				const number = pr.number;
+				const isDraft = pr.draft
+					? ` <span class="badge badge-private">Brouillon</span>`
+					: "";
+				const date = pr.updated_at
+					? new Date(pr.updated_at).toLocaleString("fr-FR")
+					: "";
+				const safeTitle = this.escapePrText(pr.title);
+				return `
+				<div class="panel-card" style="display: flex; flex-direction: column; gap: 10px;">
+					<div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap;">
+						<div>
+							<div style="font-weight: 700; color: #fff;">
+								#${number} — ${safeTitle}${isDraft}
+							</div>
+							<div class="help-text" style="margin: 4px 0 0;">
+								📦 ${this.escapePrText(owner)}/${this.escapePrText(repo)} · Par @${this.escapePrText(pr.user?.login || "?")} · Maj ${date}
+							</div>
+						</div>
+						<a href="${pr.html_url}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">↗ Voir</a>
+					</div>
+					<div style="display: flex; gap: 8px; flex-wrap: wrap;">
+						<button type="button" class="btn btn-success btn-sm" data-pr-action="approve" data-pr-owner="${this.escapePrText(owner)}" data-pr-repo="${this.escapePrText(repo)}" data-pr-number="${number}">✅ Approuver (review)</button>
+						<button type="button" class="btn btn-primary btn-sm" data-pr-action="approve-merge" data-pr-owner="${this.escapePrText(owner)}" data-pr-repo="${this.escapePrText(repo)}" data-pr-number="${number}">🔀 Approuver & Fusionner</button>
+						<button type="button" class="btn btn-secondary btn-sm" data-pr-action="close" data-pr-owner="${this.escapePrText(owner)}" data-pr-repo="${this.escapePrText(repo)}" data-pr-number="${number}">🚫 Fermer</button>
+					</div>
+				</div>`;
+			})
+			.join("");
+	}
+
+	async handlePrAction(action, owner, repo, number, btn) {
+		if (!this.gh.isAuthenticated() || !owner || !repo || !number) return;
+		const buttons = [
+			...document.querySelectorAll(
+				`button[data-pr-number="${number}"][data-pr-repo="${repo}"]`,
+			),
+		];
+		const original = btn ? btn.textContent : "";
+		buttons.forEach((b) => (b.disabled = true));
+		if (btn) btn.textContent = "⏳ ...";
+		try {
+			if (action === "approve") {
+				await this.gh.approvePullRequest(owner, repo, number);
+				this.showToast(
+					`PR #${number} approuvée (review enregistrée, sans fusion) !`,
+					"success",
+				);
+			} else if (action === "approve-merge") {
+				await this.gh.approvePullRequest(owner, repo, number);
+				await this.gh.mergePullRequest(owner, repo, number);
+				this.showToast(
+					`PR #${number} approuvée puis fusionnée (squash) !`,
+					"success",
+				);
+			} else if (action === "close") {
+				await this.gh.closePullRequest(owner, repo, number);
+				this.showToast(`PR #${number} fermée.`, "info");
+			}
+			this.loadApprovals(true);
+		} catch (err) {
+			console.error("Erreur approbation PR :", err);
+			this.showToast(`Échec de l'action : ${err.message}`, "error");
+			buttons.forEach((b) => (b.disabled = false));
+			if (btn) btn.textContent = original;
+		}
 	}
 
 	updateAuthPill() {

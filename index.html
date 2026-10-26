@@ -36,6 +36,9 @@
       <button type="button" class="nav-tab" data-tab="ai" role="tab" aria-selected="false">
         🤖 Missions & IA
       </button>
+      <button type="button" class="nav-tab" data-tab="approvals" role="tab" aria-selected="false">
+        ✅ Approbations (<span id="header-pr-count">0</span>)
+      </button>
     </div>
 
     <div class="header-actions">
@@ -320,6 +323,22 @@
       </div>
     </section>
 
+    <!-- TAB 4: APPROBATIONS GITHUB (Pull Requests) -->
+    <section id="tab-approvals" class="tab-panel hidden">
+      <div class="hero-banner">
+        <div>
+          <h1 class="hero-title">✅ Approbations GitHub</h1>
+          <p class="hero-desc">
+            Toutes les Pull Requests ouvertes de vos dépôts — approbation formelle (review), fusion ou fermeture, en direct via GitHub API. Jamais de commit direct sans votre validation.
+          </p>
+        </div>
+        <div class="hero-quick-links">
+          <button type="button" id="btn-refresh-approvals" class="btn btn-primary btn-sm">🔄 Rafraîchir</button>
+        </div>
+      </div>
+      <div id="approvals-list" class="projects-grid" style="grid-template-columns: 1fr; align-content: start;"></div>
+    </section>
+
   </main>
 
   <!-- Modal Gestionnaire des 3 Crédentiels -->
@@ -440,6 +459,6 @@
   </div>
 
   <div id="toast-container" class="toast-container"></div>
-  <script type="module" src="js/app.js?v=2.8.0"></script>
+  <script type="module" src="js/app.js?v=2.9.0"></script>
 </body>
 </html>
