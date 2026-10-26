@@ -117,18 +117,21 @@ export class AgentsHub {
 		const isPC = target === this.pcOptionValue;
 		const isGasHub = !!target && !isPC && target === this.getGasHubRepo();
 		const gasRow = document.getElementById("agent-gas-script-row");
+		const submenu = document.getElementById("gas-context-submenu");
 		const branchRow = document.getElementById("agent-branch-row");
-		if (gasRow) {
-			if (isGasHub && this.app.claspScripts && this.app.claspScripts.length) {
-				gasRow.style.display = "";
-				const gasSel = document.getElementById("agent-gas-script");
-				if (gasSel)
-					gasSel.innerHTML = this.app.claspScripts
-						.map((s) => '<option value="' + s.name + '">' + s.name + "</option>")
-						.join("");
-			} else {
-				gasRow.style.display = "none";
-			}
+		const showGas =
+			isGasHub && this.app.claspScripts && this.app.claspScripts.length;
+		if (gasRow) gasRow.style.display = showGas ? "" : "none";
+		if (submenu) submenu.style.display = showGas ? "" : "none";
+		if (showGas && gasRow) {
+			const gasSel = document.getElementById("agent-gas-script");
+			if (gasSel)
+				gasSel.innerHTML = this.app.claspScripts
+					.map(
+						(s) =>
+							'<option value="' + s.id + '">' + s.name + "</option>",
+					)
+					.join("");
 		}
 		if (branchRow) branchRow.style.display = isPC ? "none" : "";
 	}
@@ -147,7 +150,11 @@ export class AgentsHub {
 			((document.getElementById("agent-task-desc") || {}).value || "").trim() || "";
 		if (!desc) throw new Error("Décrivez la mise à jour à effectuer.");
 		if (!isPC && target === this.getGasHubRepo()) {
-			const script = (document.getElementById("agent-gas-script") || {}).value;
+			const gasSel = document.getElementById("agent-gas-script");
+			const script =
+				gasSel && gasSel.selectedOptions && gasSel.selectedOptions[0]
+					? gasSel.selectedOptions[0].textContent.trim()
+					: "";
 			if (script)
 				desc = "Script Google Apps Script concerné : " + script + ".\n\n" + desc;
 		}

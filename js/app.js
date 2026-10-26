@@ -32,7 +32,6 @@ class TourDeControleApp {
 		this.bindEvents();
 		this.updateAuthPill();
 		this.renderWorkspaceScripts();
-		this.populateAutoGasScripts();
 		this.agentsHub.refreshTargets();
 
 		window.addEventListener("hashchange", () => {
@@ -257,6 +256,27 @@ class TourDeControleApp {
 			.getElementById("btn-run-gas-pipeline")
 			?.addEventListener("click", () => this.runGasPipeline());
 
+		// Sous-menu Apps Script : ouvrir le script sélectionné dans Interdevappscript
+		document
+			.getElementById("btn-open-gas-studio")
+			?.addEventListener("click", () => {
+				const scriptId =
+					document.getElementById("agent-gas-script")?.value || "";
+				if (!scriptId) {
+					this.showToast(
+						"Sélectionnez d'abord un script Apps Script.",
+						"error",
+					);
+					return;
+				}
+				window.open(
+					"https://geoff1805.github.io/Interdevappscript/?scriptId=" +
+						encodeURIComponent(scriptId),
+					"_blank",
+					"noopener",
+				);
+			});
+
 		// Modal - Import JSON & Lien Magique
 		document
 			.getElementById("btn-import-config-file")
@@ -438,7 +458,6 @@ class TourDeControleApp {
 			if (Array.isArray(data.claspScripts)) {
 				this.claspScripts = data.claspScripts;
 				this.renderWorkspaceScripts();
-				this.populateAutoGasScripts();
 				this.agentsHub.refreshTargets();
 			}
 			return data;
@@ -1380,22 +1399,6 @@ ${desc || title}
 	}
 
 	// --- Pipeline Autonome Apps Script : Dev ➔ Test ➔ Déploiement ---
-	populateAutoGasScripts() {
-		const sel = document.getElementById("auto-gas-script");
-		if (!sel) return;
-		if (!this.claspScripts.length) {
-			sel.innerHTML = "<option value=\"\">— Crédentiels GitHub requis —</option>";
-			return;
-		}
-
-		sel.innerHTML = this.claspScripts
-			.map(
-				(s) =>
-					`<option value="${s.id}">${s.name} (${s.id.slice(0, 8)}...)</option>`,
-			)
-			.join("");
-	}
-
 	updatePipelineStep(stepNum, state, message) {
 		const stepEl = document.getElementById(`step-${stepNum}`);
 		if (!stepEl) return;
@@ -1415,7 +1418,7 @@ ${desc || title}
 	}
 
 	async runGasPipeline() {
-		const scriptId = document.getElementById("auto-gas-script")?.value;
+		const scriptId = document.getElementById("agent-gas-script")?.value;
 		const aiChoice =
 			document.getElementById("auto-gas-ai")?.value ||
 			"mistral:codestral-latest";

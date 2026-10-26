@@ -33,9 +33,6 @@
       <button type="button" class="nav-tab" data-tab="docs" role="tab" aria-selected="false" style="display: none;">
         📜 Règles & Docs
       </button>
-      <button type="button" class="nav-tab" data-tab="workspace" role="tab" aria-selected="false">
-        ⚡ Apps Script
-      </button>
       <button type="button" class="nav-tab" data-tab="ai" role="tab" aria-selected="false">
         🤖 Missions & IA
       </button>
@@ -167,73 +164,6 @@
     </section>
 
     <!-- TAB 3: WORKSPACE & GOOGLE APPS SCRIPT -->
-    <section id="tab-workspace" class="tab-panel hidden">
-
-      <!-- Pipeline Autonome Mobile : Dev ➔ Test ➔ Déploiement Apps Script -->
-      <div class="panel-card" style="margin-bottom: 24px; border: 1px solid rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);">
-        <div class="panel-title" style="margin-bottom: 12px;">
-          <span>⚡ Studio Autonome Apps Script (Dev ➔ Test ➔ Déploiement)</span>
-          <span class="badge badge-public">Mobile-Ready</span>
-        </div>
-        <p class="help-text" style="margin-bottom: 18px;">
-          Formulez votre besoin : l'IA sélectionnée lit le code source existant, écrit la mise à jour, valide les tests de syntaxe et déploie directement le script sur Google Apps Script en 1 clic.
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px; margin-bottom: 14px;">
-          <!-- 1. Script Cible -->
-          <div class="form-group" style="margin: 0;">
-            <label class="form-label" for="auto-gas-script">1. Script Google Workspace cible :</label>
-            <select id="auto-gas-script" class="form-select"></select>
-          </div>
-
-          <!-- 2. Cerveau IA -->
-          <div class="form-group" style="margin: 0;">
-            <label class="form-label" for="auto-gas-ai">2. Cerveau IA & Modèle :</label>
-            <select id="auto-gas-ai" class="form-select">
-              <option value="mistral:codestral-latest">🌟 Mistral Codestral (Code d'élite)</option>
-              <option value="groq:qwen/qwen3.8-27b">⚡ Groq Qwen 3.8 (Ultra-rapide 500 tps)</option>
-              <option value="gemini:gemini-2.5-flash">✨ Google Gemini 2.5 Flash</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- 3. Consigne / Demande -->
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label class="form-label" for="auto-gas-prompt">3. Votre besoin de développement / modification :</label>
-          <textarea id="auto-gas-prompt" class="code-editor-textarea" style="height: 100px; min-height: 90px; resize: vertical;" placeholder="Ex: Ajoute une fonction pour archiver les emails de plus de 90 jours avec log dans Sheets, et ajoute un déclencheur automatique quotidien."></textarea>
-        </div>
-
-        <!-- Bouton Déclenchement 1-Clic -->
-        <button type="button" id="btn-run-gas-pipeline" class="btn btn-primary" style="width: 100%; min-height: 50px; font-size: 1.05rem; font-weight: 700; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
-          🚀 Développer, Tester et Déployer dans Google Apps Script
-        </button>
-
-        <!-- Stepper Visuel de Progression -->
-        <div id="gas-pipeline-stepper" class="hidden" style="margin-top: 20px; padding: 16px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border-subtle);">
-          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 12px; color: #fff;">Cycle d'Exécution Autonome :</div>
-          <div style="display: flex; flex-direction: column; gap: 8px;" id="gas-pipeline-steps">
-            <div id="step-1" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 1 :</strong> Lecture du code source du script sur Google Drive</span></div>
-            <div id="step-2" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 2 :</strong> Développement et refactoring par l'IA</span></div>
-            <div id="step-3" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 3 :</strong> Tests de syntaxe JS, intégrité et quotas Google</span></div>
-            <div id="step-4" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 4 :</strong> Déploiement direct dans Google Apps Script Cloud</span></div>
-          </div>
-          <div id="gas-pipeline-result" style="margin-top: 14px;" class="hidden"></div>
-        </div>
-      </div>
-
-      <div class="panel-card" style="margin-bottom: 20px;">
-        <div class="panel-title">
-          <span>⚡ Cartographie Google Workspace & Google Apps Script</span>
-          <span class="badge badge-public">Scripts Apps Script</span>
-        </div>
-        <p class="help-text" style="margin-bottom: 16px;">
-          Retrouvez vos scripts Google Apps Script de production. Cliquez sur <strong>⚡ Ouvrir dans Interdevappscript</strong> pour les charger directement dans le studio web.
-        </p>
-        <div id="workspace-scripts-grid" class="projects-grid"></div>
-      </div>
-    </section>
-
-    <!-- TAB 4: MISSIONS, IA & PC BRIDGE -->
     <section id="tab-ai" class="tab-panel hidden">
       <div class="ai-grid">
         <div class="panel-card">
@@ -320,8 +250,48 @@
               <select id="agent-target" class="form-select"></select>
             </div>
             <div class="form-group" id="agent-gas-script-row" style="display: none;">
-              <label class="form-label" for="agent-gas-script">Script Apps Script concerné :</label>
+              <label class="form-label" for="agent-gas-script">Script Apps Script concerné (mission &amp; 1-clic) :</label>
               <select id="agent-gas-script" class="form-select"></select>
+            </div>
+            <div id="gas-context-submenu" style="display: none; border: 1px solid rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%); border-radius: 12px; padding: 14px; margin: 4px 0;">
+              <div class="panel-title" style="margin-bottom: 10px;">
+                <span>⚡ Sous-menu Apps Script</span>
+                <span class="badge badge-ok">Dépôt hub détecté</span>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+                <button type="button" id="btn-open-gas-studio" class="btn btn-secondary btn-sm">⚡ Ouvrir le script dans Interdevappscript</button>
+              </div>
+              <p class="help-text" style="margin-bottom: 12px;">Voie rapide 1-clic : l'IA lit le code source, écrit la mise à jour, valide la syntaxe et <strong>déploie directement sur Google Apps Script</strong> (sans PR). La mission ci-dessus, elle, passe par une Pull Request à valider.</p>
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" for="auto-gas-ai">Cerveau IA &amp; Modèle (1-clic) :</label>
+                <select id="auto-gas-ai" class="form-select">
+                  <option value="mistral:codestral-latest">🌟 Mistral Codestral (Code d'élite)</option>
+                  <option value="groq:qwen/qwen3.8-27b">⚡ Groq Qwen 3.8 (Ultra-rapide 500 tps)</option>
+                  <option value="gemini:gemini-2.5-flash">✨ Google Gemini 2.5 Flash</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="auto-gas-prompt">Votre besoin de développement / modification :</label>
+                <textarea id="auto-gas-prompt" class="code-editor-textarea" style="height: 100px; min-height: 90px; resize: vertical;" placeholder="Ex : Ajoute une fonction pour archiver les emails de plus de 90 jours avec log dans Sheets..."></textarea>
+              </div>
+              <button type="button" id="btn-run-gas-pipeline" class="btn btn-primary" style="width: 100%; min-height: 48px; font-weight: 700; margin-top: 4px;">
+                🚀 Développer, Tester et Déployer dans Google Apps Script
+              </button>
+              <div id="gas-pipeline-stepper" class="hidden" style="margin-top: 16px; padding: 14px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border-subtle);">
+                <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 12px; color: #fff;">Cycle d'Exécution Autonome :</div>
+                <div style="display: flex; flex-direction: column; gap: 8px;" id="gas-pipeline-steps">
+                  <div id="step-1" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 1 :</strong> Lecture du code source du script sur Google Drive</span></div>
+                  <div id="step-2" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 2 :</strong> Développement et refactoring par l'IA</span></div>
+                  <div id="step-3" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 3 :</strong> Tests de syntaxe JS, intégrité et quotas Google</span></div>
+                  <div id="step-4" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 4 :</strong> Déploiement direct dans Google Apps Script Cloud</span></div>
+                </div>
+                <div id="gas-pipeline-result" style="margin-top: 14px;" class="hidden"></div>
+              </div>
+              <details style="margin-top: 16px;">
+                <summary style="cursor: pointer; font-weight: 600; color: var(--text-secondary);">📂 Cartographie des scripts Apps Script</summary>
+                <p class="help-text" style="margin-top: 10px;">Scripts de production. « ⚡ Ouvrir dans Interdevappscript » charge le script dans le studio web.</p>
+                <div id="workspace-scripts-grid" class="projects-grid" style="margin-top: 10px;"></div>
+              </details>
             </div>
             <div class="form-group" id="agent-branch-row">
               <label class="form-label" for="agent-branch">2. Branche de départ :</label>
@@ -470,6 +440,6 @@
   </div>
 
   <div id="toast-container" class="toast-container"></div>
-  <script type="module" src="js/app.js?v=2.7.0"></script>
+  <script type="module" src="js/app.js?v=2.8.0"></script>
 </body>
 </html>
