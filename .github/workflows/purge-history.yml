@@ -1,0 +1,50 @@
+name: Purge Historique (one-shot)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/purge-history.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: purge-history
+  cancel-in-progress: false
+
+jobs:
+  purge:
+    name: Purge de l'historique (commit orphelin propre)
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout complet
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Garde-fou 1 (push force — purge deja effectuee)
+        if: github.event.forced == true
+        run: |
+          echo "Push force detecte : la purge a deja ete effectuee, rien a faire."
+          exit 0
+
+      - name: Garde-fou 2 (historique deja reduit a un commit)
+        run: |
+          COUNT=$(git rev-list --count HEAD)
+          echo "Nombre de commits : $COUNT"
+          if [ "$COUNT" -le 1 ]; then
+            echo "Historique deja purge, rien a faire."
+            exit 0
+          fi
+
+      - name: Creation du commit orphelin propre et push force
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan fresh-main
+          git add -A
+          git commit -m "Purge historique : etat propre consolide (les commits anterieurs contenaient des donnees privees)"
+          git push --force origin fresh-main:main
+          echo "Historique purge avec succes."

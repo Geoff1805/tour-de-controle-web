@@ -1,0 +1,42 @@
+name: CI & Security Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Security & Syntax Audit
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check HTML and JS integrity
+        run: |
+          test -f index.html
+          test -f favicon.svg
+          test -f manifest.json
+          test -f css/style.css
+          test -f js/app.js
+          test -f js/markdown.js
+          test -f js/githubClient.js
+          test -f js/aiClient.js
+          test -f js/gasManager.js
+          test -f js/gasClient.js
+          echo "All core files are present."
+
+      - name: Verify zero hardcoded tokens
+        run: |
+          if grep -rnE '(AIzaSy[0-9A-Za-z_-]{33}|ghp_[0-9A-Za-z]{36}|ya29\.[0-9A-Za-z_-]+)' js/ index.html; then
+            echo "::error::Hardcoded secret or token detected!"
+            exit 1
+          fi
+          echo "Audit completed: Zero secrets found."

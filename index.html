@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="description" content="Tour de Contrôle Antigravity — Console Web Client-Side Zero-Knowledge.">
+  <title>Tour de Contrôle Antigravity — Web Console</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css?v=2.3.0">
+  <!-- Google Identity Services (OAuth2 Client) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <a href="./" class="brand">
+      <img src="favicon.svg" alt="Tour de Contrôle" class="brand-icon">
+      <div>
+        <span class="brand-title">Tour de Contrôle</span>
+        <span class="brand-subtitle">Antigravity Console</span>
+      </div>
+    </a>
+
+    <div class="nav-tabs" role="tablist" aria-label="Navigation principale">
+      <button type="button" class="nav-tab active" data-tab="dashboard" role="tab" aria-selected="true">
+        🏛️ Dépôts & CI/CD (<span id="header-repo-count">0</span>)
+      </button>
+      <button type="button" class="nav-tab" data-tab="docs" role="tab" aria-selected="false">
+        📜 Règles & Docs
+      </button>
+      <button type="button" class="nav-tab" data-tab="workspace" role="tab" aria-selected="false">
+        ⚡ Apps Script
+      </button>
+      <button type="button" class="nav-tab" data-tab="ai" role="tab" aria-selected="false">
+        🤖 Missions & IA
+      </button>
+    </div>
+
+    <div class="header-actions">
+      <div id="gh-status-pill" class="status-pill" title="Statut de connexion">
+        <span class="dot"></span>
+        <span id="gh-status-text">Non Connecté</span>
+      </div>
+      <button type="button" id="btn-refresh-all" class="btn btn-secondary btn-sm" title="Actualiser les données">
+        🔄 Sync
+      </button>
+      <button type="button" id="btn-open-settings" class="btn btn-primary btn-sm" title="Gérer mes 3 identifiants">
+        ⚙️ Crédentiels
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-container">
+
+    <!-- TAB 1: DASHBOARD (TOUS LES PROJETS GITHUB) -->
+    <section id="tab-dashboard" class="tab-panel active">
+      <div id="guest-notice" class="panel-card" style="margin-bottom: 20px; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(99, 102, 241, 0.4); background: rgba(99, 102, 241, 0.08);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 1.4rem;">🏛️</span>
+          <div>
+            <strong style="color: #fff; font-size: 0.95rem;">Catalogue de l'Écosystème Antigravity</strong>
+            <p class="help-text" style="margin: 0; font-size: 0.82rem;">Navigation et documentation accessibles. Pour synchroniser les dépôts privés et actions en direct, configurez vos accès.</p>
+          </div>
+        </div>
+        <button type="button" id="btn-open-settings-notice" class="btn btn-primary btn-sm">⚙️ Gérer mes Crédentiels</button>
+      </div>
+      <div class="hero-banner">
+        <div>
+          <h1 class="hero-title">🏛️ Écosystème Antigravity</h1>
+          <p class="hero-desc">
+            Surveillance en temps réel de tous vos dépôts GitHub, statuts CI/CD et releases APK.
+          </p>
+        </div>
+        <div class="hero-quick-links">
+          <a href="https://geoff1805.github.io/Interdevappscript/" target="_blank" rel="noopener" class="btn btn-primary btn-sm">
+            ⚡ Interdevappscript Studio
+          </a>
+          <a href="https://geoff1805.github.io/GitCMSstudio/" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+            📝 GitCMSstudio
+          </a>
+          <a href="https://github.com/Geoff1805?tab=repositories" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">
+            🐙 Voir sur GitHub ↗
+          </a>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">Dépôts Détectés</span>
+          <span class="kpi-value" id="kpi-projects">0</span>
+          <span class="kpi-sub" id="kpi-private">100% en direct via GitHub API</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Dépôts Privés</span>
+          <span class="kpi-value" id="kpi-private-count">0</span>
+          <span class="kpi-sub">Protégés et confidentiels</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Usine Logicielle CI/CD</span>
+          <span class="kpi-value" id="kpi-ci-summary">Active</span>
+          <span class="kpi-sub">Workflows GitHub Actions</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Architecture</span>
+          <span class="kpi-value">Zero-Knowledge</span>
+          <span class="kpi-sub">100% Navigateur • 0 serveur</span>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <input type="search" id="project-search" class="form-input" placeholder="🔍 Rechercher parmi tous vos dépôts...">
+        </div>
+        <div class="filter-pills" id="project-category-filters">
+          <button type="button" class="chip active" data-cat="all">Tous (<span id="cat-count-all">0</span>)</button>
+          <button type="button" class="chip" data-cat="mobile">📱 Mobile Android / KMP (<span id="cat-count-mobile">0</span>)</button>
+          <button type="button" class="chip" data-cat="web">🌐 Web & Studios (<span id="cat-count-web">0</span>)</button>
+          <button type="button" class="chip" data-cat="infra">⚙️ Infra & Scripts (<span id="cat-count-infra">0</span>)</button>
+        </div>
+      </div>
+
+      <div id="projects-grid" class="projects-grid"></div>
+    </section>
+
+    <!-- TAB 2: RÈGLES & DOCS DU RÉPO PRIVÉ -->
+    <section id="tab-docs" class="tab-panel hidden">
+      <div class="docs-layout">
+        <aside class="panel-card">
+          <div class="panel-title">
+            <span>📚 Documents de tour-de-controle</span>
+          </div>
+          <ul id="docs-nav-list" class="doc-nav-list"></ul>
+        </aside>
+
+        <div class="panel-card">
+          <div class="toolbar" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 12px;">
+            <div>
+              <h2 id="doc-active-title" style="font-size: 1.05rem; font-weight: 700;">rules/global.md</h2>
+              <span id="doc-active-status" class="help-text">Chargement...</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="btn-toggle-edit-doc" class="btn btn-secondary btn-sm">
+                ✏️ Mode Édition
+              </button>
+              <button type="button" id="btn-save-doc-github" class="btn btn-success btn-sm hidden">
+                💾 Commit & Push (Ctrl+S)
+              </button>
+              <button type="button" id="btn-copy-doc" class="btn btn-secondary btn-sm">
+                📋 Copier
+              </button>
+            </div>
+          </div>
+
+          <div id="doc-viewer-container" class="markdown-viewer"></div>
+          <div id="doc-editor-container" class="hidden">
+            <textarea id="doc-editor-textarea" class="code-editor-textarea" spellcheck="false"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: WORKSPACE & GOOGLE APPS SCRIPT -->
+    <section id="tab-workspace" class="tab-panel hidden">
+
+      <!-- Pipeline Autonome Mobile : Dev ➔ Test ➔ Déploiement Apps Script -->
+      <div class="panel-card" style="margin-bottom: 24px; border: 1px solid rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%);">
+        <div class="panel-title" style="margin-bottom: 12px;">
+          <span>⚡ Studio Autonome Apps Script (Dev ➔ Test ➔ Déploiement)</span>
+          <span class="badge badge-public">Mobile-Ready</span>
+        </div>
+        <p class="help-text" style="margin-bottom: 18px;">
+          Formulez votre besoin : l'IA sélectionnée lit le code source existant, écrit la mise à jour, valide les tests de syntaxe et déploie directement le script sur Google Apps Script en 1 clic.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 14px;">
+          <!-- 1. Script Cible -->
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="auto-gas-script">1. Script Google Workspace cible :</label>
+            <select id="auto-gas-script" class="form-select"></select>
+          </div>
+
+          <!-- 2. Cerveau IA -->
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label" for="auto-gas-ai">2. Cerveau IA & Modèle :</label>
+            <select id="auto-gas-ai" class="form-select">
+              <option value="mistral:codestral-latest">🌟 Mistral Codestral (Code d'élite)</option>
+              <option value="groq:qwen/qwen3.8-27b">⚡ Groq Qwen 3.8 (Ultra-rapide 500 tps)</option>
+              <option value="gemini:gemini-2.5-flash">✨ Google Gemini 2.5 Flash</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3. Consigne / Demande -->
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" for="auto-gas-prompt">3. Votre besoin de développement / modification :</label>
+          <textarea id="auto-gas-prompt" class="code-editor-textarea" style="height: 100px; min-height: 90px; resize: vertical;" placeholder="Ex: Ajoute une fonction pour archiver les emails de plus de 90 jours avec log dans Sheets, et ajoute un déclencheur automatique quotidien."></textarea>
+        </div>
+
+        <!-- Bouton Déclenchement 1-Clic -->
+        <button type="button" id="btn-run-gas-pipeline" class="btn btn-primary" style="width: 100%; min-height: 50px; font-size: 1.05rem; font-weight: 700; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
+          🚀 Développer, Tester et Déployer dans Google Apps Script
+        </button>
+
+        <!-- Stepper Visuel de Progression -->
+        <div id="gas-pipeline-stepper" class="hidden" style="margin-top: 20px; padding: 16px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--border-subtle);">
+          <div style="font-weight: 700; font-size: 0.95rem; margin-bottom: 12px; color: #fff;">Cycle d'Exécution Autonome :</div>
+          <div style="display: flex; flex-direction: column; gap: 8px;" id="gas-pipeline-steps">
+            <div id="step-1" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 1 :</strong> Lecture du code source du script sur Google Drive</span></div>
+            <div id="step-2" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 2 :</strong> Développement et refactoring par l'IA</span></div>
+            <div id="step-3" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 3 :</strong> Tests de syntaxe JS, intégrité et quotas Google</span></div>
+            <div id="step-4" class="step-item"><span class="step-icon">⚪</span> <span><strong>Étape 4 :</strong> Déploiement direct dans Google Apps Script Cloud</span></div>
+          </div>
+          <div id="gas-pipeline-result" style="margin-top: 14px;" class="hidden"></div>
+        </div>
+      </div>
+
+      <div class="panel-card" style="margin-bottom: 20px;">
+        <div class="panel-title">
+          <span>⚡ Cartographie Google Workspace & Google Apps Script</span>
+          <span class="badge badge-public">Scripts Apps Script</span>
+        </div>
+        <p class="help-text" style="margin-bottom: 16px;">
+          Retrouvez vos scripts Google Apps Script de production. Cliquez sur <strong>⚡ Ouvrir dans Interdevappscript</strong> pour les charger directement dans le studio web.
+        </p>
+        <div id="workspace-scripts-grid" class="projects-grid"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: MISSIONS, IA & PC BRIDGE -->
+    <section id="tab-ai" class="tab-panel hidden">
+      <div class="ai-grid">
+        <div class="panel-card">
+          <div class="panel-title">
+            <span>🚀 Générateur de Missions & Issue Dispatcher</span>
+            <span class="badge badge-ok">Règle 15 & 16</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="mission-project">1. Dépôt cible :</label>
+            <select id="mission-project" class="form-select"></select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="mission-type">2. Type d'intervention :</label>
+            <select id="mission-type" class="form-select">
+              <option value="feature">✨ Nouvelle fonctionnalité</option>
+              <option value="bugfix">🐛 Correction de bug</option>
+              <option value="security">🛡️ Audit Sécurité & Dependabot</option>
+              <option value="release">📦 Release APK & Version bump</option>
+              <option value="refactor">♻️ Refactorisation Green IT</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="mission-title">3. Titre de la mission :</label>
+            <input type="text" id="mission-title" class="form-input" placeholder="Titre clair...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="mission-desc">4. Description :</label>
+            <textarea id="mission-desc" class="form-textarea" rows="3" placeholder="Critères d'acceptation, cas limites..."></textarea>
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+            <button type="button" id="btn-generate-prompt" class="btn btn-primary btn-sm">⚡ Générer Prompt</button>
+            <button type="button" id="btn-dispatch-issue" class="btn btn-success btn-sm">🤖 Créer Issue (ai-solve)</button>
+          </div>
+
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label" for="mission-output">Prompt généré :</label>
+              <button type="button" id="btn-copy-prompt" class="btn btn-ghost btn-sm">📋 Copier</button>
+            </div>
+            <textarea id="mission-output" class="form-textarea" rows="6" readonly style="font-family: var(--font-mono); font-size: 0.8rem;"></textarea>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="panel-card">
+            <div class="panel-title">
+              <span>✨ Copilote IA (Gemini 3.8 Flash)</span>
+              <span class="badge badge-public">Google AI Studio</span>
+            </div>
+            <div class="form-group">
+              <textarea id="ai-chat-input" class="form-textarea" rows="3" placeholder="Posez une question d'architecture ou de commande..."></textarea>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+              <button type="button" id="btn-ask-gemini" class="btn btn-primary btn-sm">Interroger ✨</button>
+            </div>
+            <div id="ai-chat-response" class="markdown-viewer" style="background: #050811; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; min-height: 140px; max-height: 280px; overflow-y: auto;">
+              👋 Prêt.
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-title">
+              <span>🖥️ Passerelle PC Bridge (Localhost / Tailscale)</span>
+              <span class="badge badge-private" id="bridge-status-badge">Hors-ligne</span>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <button type="button" id="btn-ping-bridge" class="btn btn-secondary btn-sm">🔍 Tester PC Bridge</button>
+              <button type="button" id="btn-sync-bridge" class="btn btn-success btn-sm">🔄 Sync PC ↔ GitHub</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal Gestionnaire des 3 Crédentiels -->
+  <div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 style="font-size: 1.05rem; font-weight: 700;">⚙️ Gestion des 3 Accès (Zero-Knowledge)</h3>
+        <button type="button" id="btn-close-settings" class="btn btn-ghost btn-sm">✕</button>
+      </div>
+      <div class="modal-body">
+        <!-- 1. GitHub -->
+        <div style="margin-bottom: 18px;">
+          <label class="form-label" for="input-gh-token">1. GitHub Personal Access Token (PAT) :</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="input-gh-token" class="form-input" style="flex: 1;" placeholder="ghp_... ou gho_...">
+            <button type="button" id="btn-test-gh-modal" class="btn btn-secondary btn-sm">Tester</button>
+          </div>
+          <span id="modal-gh-status" class="help-text">Requis pour lister vos dépôts privés et afficher vos règles.</span>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 14px 0;">
+
+        <!-- 2. IA - Mistral Codestral & Groq & Gemini -->
+        <div style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" for="input-mistral-key" style="margin: 0;">2. Mistral AI (Codestral - Code d'élite) :</label>
+            <span id="modal-mistral-status" class="badge badge-public">Optionnel</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="input-mistral-key" class="form-input" style="flex: 1;" placeholder="mstrl_...">
+            <button type="button" id="btn-test-mistral-modal" class="btn btn-secondary btn-sm">Tester</button>
+          </div>
+          <span class="help-text">Modèle d'excellence pour le développement autonome Google Apps Script.</span>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" for="input-groq-key" style="margin: 0;">3. Groq Cloud (Qwen / GPT-OSS - 500 tps) :</label>
+            <span id="modal-groq-status" class="badge badge-public">Optionnel</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="input-groq-key" class="form-input" style="flex: 1;" placeholder="gsk_...">
+            <button type="button" id="btn-test-groq-modal" class="btn btn-secondary btn-sm">Tester</button>
+          </div>
+          <span class="help-text">Inférence ultra-rapide sans latence (Free Tier).</span>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" for="input-gemini-key" style="margin: 0;">4. Google AI Studio (Gemini 2.5 / 3.8 Flash) :</label>
+            <span id="modal-gemini-status" class="badge badge-public">Optionnel</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="input-gemini-key" class="form-input" style="flex: 1;" placeholder="AIzaSy...">
+            <button type="button" id="btn-test-gemini-modal" class="btn btn-secondary btn-sm">Tester</button>
+          </div>
+          <span class="help-text">Copilote IA et grand contexte multimodal.</span>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 14px 0;">
+
+        <!-- 5. Google Apps Script -->
+        <div style="margin-bottom: 18px;">
+          <label class="form-label" for="input-gas-token">5. Accès Google Apps Script (Workspace) :</label>
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+            <button type="button" id="btn-login-google-modal" class="btn btn-primary btn-sm">🔑 Connexion Google (GIS)</button>
+            <input type="password" id="input-gas-token" class="form-input" style="flex: 1;" placeholder="Ou Bearer Token manuel...">
+          </div>
+          <span id="modal-gas-status" class="help-text">Permet d'ouvrir et sauvegarder vos scripts dans Interdevappscript.</span>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 14px 0;">
+
+        <!-- 4. PC Bridge -->
+        <div>
+          <label class="form-label" for="input-bridge-url">4. URL Passerelle PC Bridge (Optionnel) :</label>
+          <input type="url" id="input-bridge-url" class="form-input" placeholder="http://localhost:8000">
+        </div>
+        <!-- Option de persistance Sécurisée -->
+        <div style="display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid var(--border-subtle);">
+          <input type="checkbox" id="input-remember-tokens" style="accent-color: var(--accent); width: 18px; height: 18px; cursor: pointer;">
+          <div>
+            <label for="input-remember-tokens" class="form-label" style="margin-bottom: 0; cursor: pointer; font-size: 13px; font-weight: 600;">
+              Mémoriser sur cet appareil (<code>localStorage</code>)
+            </label>
+            <div class="help-text" style="font-size: 11px; margin-top: 2px;">
+              Décoché = conservé uniquement pour la session active (<code>sessionStorage</code>, effacé à la fermeture de l'onglet).
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer"  style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <input type="file" id="input-import-config-file" accept=".json" style="display: none;">
+        <button type="button" id="btn-import-config-file" class="btn btn-secondary btn-sm" title="Importer depuis tour_de_controle_config.json">📁 Importer JSON</button>
+        <button type="button" id="btn-copy-magic-link" class="btn btn-ghost btn-sm" title="Générer un lien magique sécurisé">🔗 Lien Magique</button>
+        <div style="flex: 1;"></div>
+        <button type="button" id="btn-cancel-settings" class="btn btn-secondary btn-sm">Fermer</button>
+        <button type="button" id="btn-save-settings" class="btn btn-primary btn-sm">Enregistrer mes Accès</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script type="module" src="js/app.js?v=2.5.0"></script>
+</body>
+</html>

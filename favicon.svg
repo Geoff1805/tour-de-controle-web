@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Tour de Contrôle Antigravity</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="50%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+    <linearGradient id="tower" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="#38bdf8" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Radar rings -->
+  <circle cx="256" cy="180" r="130" fill="none" stroke="#38bdf8" stroke-width="6" stroke-opacity="0.22" stroke-dasharray="18 12"/>
+  <circle cx="256" cy="180" r="92" fill="none" stroke="#818cf8" stroke-width="6" stroke-opacity="0.35"/>
+  <!-- Signal waves -->
+  <path d="M136 140 A140 140 0 0 1 376 140" fill="none" stroke="url(#beam)" stroke-width="10" stroke-linecap="round"/>
+  <!-- Control Tower body -->
+  <polygon points="196,420 222,236 290,236 316,420" fill="url(#tower)"/>
+  <!-- Control Deck -->
+  <polygon points="164,236 184,168 328,168 348,236" fill="#38bdf8"/>
+  <polygon points="182,224 196,180 316,180 330,224" fill="#0f172a"/>
+  <!-- Beacon -->
+  <line x1="256" y1="168" x2="256" y2="104" stroke="#f8fafc" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="256" cy="96" r="22" fill="#10b981"/>
+  <circle cx="256" cy="96" r="10" fill="#ecfdf5"/>
+  <!-- Base platform -->
+  <rect x="156" y="412" width="200" height="24" rx="12" fill="#6366f1"/>
+</svg>
