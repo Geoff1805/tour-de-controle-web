@@ -22,7 +22,7 @@ L'onglet **Missions & IA** intègre un Hub d'agents autonomes pour les mises à 
 - **GitHub Copilot** : la tâche devient une issue assignée à @copilot, qui ouvre une **Pull Request à valider**.
 - **PC Bridge (Antigravity)** : la mission est envoyée au PC via le serveur FastAPI (/missions/launch, approbation requise).
 
-Toute modification passe par une **Pull Request à valider** — jamais de commit direct.
+Orchestration unifiée : Jules est l'exécutant par défaut sur les dépôts, Copilot prend le relais automatiquement, et le PC Antigravity reçoit les missions via le Bridge avec approbation requise. Toute modification passe par une **Pull Request à valider** — jamais de commit direct.
 
 ---
 

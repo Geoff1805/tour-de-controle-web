@@ -207,6 +207,14 @@ class TourDeControleApp {
 			.getElementById("btn-open-settings-notice")
 			?.addEventListener("click", () => this.openSettings());
 
+		// Lien discret vers l'onglet Règles & Docs (masqué de la navigation)
+		document
+			.getElementById("link-docs-discrete")
+			?.addEventListener("click", (e) => {
+				e.preventDefault();
+				this.switchTab("docs");
+			});
+
 		// Modal - Boutons de test
 		document
 			.getElementById("btn-test-gh-modal")
@@ -308,19 +316,13 @@ class TourDeControleApp {
 			.getElementById("btn-sync-bridge")
 			?.addEventListener("click", () => this.triggerBridgeSync());
 
-		// Hub Agents IA (Jules & Copilot & PC Bridge)
+		// Hub Agents IA (Orchestrateur : Jules → Copilot → PC Bridge)
 		document
 			.getElementById("agent-target")
-			?.addEventListener("change", () => this.agentsHub.toggleTargetFields());
+			?.addEventListener("change", () => this.agentsHub.updateTargetUI());
 		document
-			.getElementById("btn-launch-jules")
-			?.addEventListener("click", () => this.agentsHub.launchJules());
-		document
-			.getElementById("btn-launch-copilot")
-			?.addEventListener("click", () => this.agentsHub.launchCopilot());
-		document
-			.getElementById("btn-launch-bridge-mission")
-			?.addEventListener("click", () => this.agentsHub.launchBridgeMission());
+			.getElementById("btn-launch-mission")
+			?.addEventListener("click", () => this.agentsHub.launchMission());
 		document
 			.getElementById("btn-agents-refresh")
 			?.addEventListener("click", () => this.agentsHub.refreshTasks());

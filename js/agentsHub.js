@@ -1,5 +1,6 @@
 /**
- * Hub Agents IA — Jules (Google) & Copilot (GitHub) & PC Bridge (Antigravity)
+ * Hub Agents IA — Orchestrateur de missions : Jules (Google) → Copilot (GitHub) → PC Bridge (Antigravity)
+ * Mêmes règles qu'Antigravity PC : une mission = un prompt + une cible + approbation.
  * 100% Client-Side — Zero-Knowledge : clés en localStorage, jamais en dur.
  */
 
@@ -9,6 +10,7 @@ export class AgentsHub {
 		this.julesKeyStorage = "tdc_jules_key";
 		this.bridgeTokenStorage = "tdc_bridge_token";
 		this.julesBase = "https://jules.googleapis.com/v1alpha";
+		this.pcOptionValue = "__pc_antigravity__";
 	}
 
 	// ---------- Crédentiels ----------
@@ -84,74 +86,110 @@ export class AgentsHub {
 		return res.status === 204 ? null : res.json();
 	}
 
-	// ---------- Cibles ----------
+	// ---------- Cibles (liste unifiée) ----------
+
+	getGasHubRepo() {
+		return (this.app.privateCatalog || {}).gasHubRepo || null;
+	}
 
 	refreshTargets() {
-		const repoSel = document.getElementById("agent-repo");
-		const gasSel = document.getElementById("agent-gas-script");
-		if (repoSel) {
-			if (this.app.repos && this.app.repos.length) {
-				repoSel.innerHTML = this.app.repos
-					.map(
-						(r) =>
-							'<option value="' + r.name + '">' + r.name + " (" + (r.language || "Code") + ")</option>",
-					)
-					.join("");
-			} else {
-				repoSel.innerHTML = '<option value="">— Connectez-vous (PAT) —</option>';
-			}
-		}
-		if (gasSel) {
-			if (this.app.claspScripts && this.app.claspScripts.length) {
-				gasSel.innerHTML = this.app.claspScripts
-					.map((s) => '<option value="' + s.name + '">' + s.name + "</option>")
-					.join("");
-			} else {
-				gasSel.innerHTML = '<option value="">— Catalogue privé requis (PAT) —</option>';
-			}
-		}
-		this.toggleTargetFields();
+		const sel = document.getElementById("agent-target");
+		if (!sel) return;
+		const repos = this.app.repos || [];
+		let html = repos
+			.map(
+				(r) =>
+					'<option value="' + r.name + '">📦 ' + r.name +
+					(r.language ? " (" + r.language + ")" : "") +
+					"</option>",
+			)
+			.join("");
+		if (!repos.length)
+			html = '<option value="">— Connectez-vous (PAT) —</option>' + html;
+		html +=
+			'<option value="' + this.pcOptionValue + '">🖥️ PC Antigravity (via Bridge — mission approuvée)</option>';
+		sel.innerHTML = html;
+		this.updateTargetUI();
 	}
 
-	toggleTargetFields() {
-		const target = (document.getElementById("agent-target") || {}).value;
-		const repoRow = document.getElementById("agent-repo-row");
+	updateTargetUI() {
+		const target = (document.getElementById("agent-target") || {}).value || "";
+		const isPC = target === this.pcOptionValue;
+		const isGasHub = !!target && !isPC && target === this.getGasHubRepo();
 		const gasRow = document.getElementById("agent-gas-script-row");
 		const branchRow = document.getElementById("agent-branch-row");
-		if (repoRow) repoRow.style.display = target === "repo" ? "" : "none";
-		if (gasRow) gasRow.style.display = target === "gas" ? "" : "none";
-		if (branchRow) branchRow.style.display = target === "bridge" ? "none" : "";
-	}
-
-	resolveRepoName() {
-		const target = (document.getElementById("agent-target") || {}).value;
-		if (target === "gas") {
-			const hub = (this.app.privateCatalog || {}).gasHubRepo;
-			if (!hub)
-				throw new Error(
-					"Dépôt hub GAS introuvable — connectez-vous avec votre PAT (catalogue privé).",
-				);
-			return hub;
+		if (gasRow) {
+			if (isGasHub && this.app.claspScripts && this.app.claspScripts.length) {
+				gasRow.style.display = "";
+				const gasSel = document.getElementById("agent-gas-script");
+				if (gasSel)
+					gasSel.innerHTML = this.app.claspScripts
+						.map((s) => '<option value="' + s.name + '">' + s.name + "</option>")
+						.join("");
+			} else {
+				gasRow.style.display = "none";
+			}
 		}
-		const repo = (document.getElementById("agent-repo") || {}).value;
-		if (!repo) throw new Error("Sélectionnez un dépôt cible.");
-		return repo;
+		if (branchRow) branchRow.style.display = isPC ? "none" : "";
 	}
 
 	readTask() {
-		const target = (document.getElementById("agent-target") || {}).value;
+		const target = (document.getElementById("agent-target") || {}).value || "";
+		const isPC = target === this.pcOptionValue;
+		if (!target)
+			throw new Error(
+				"Sélectionnez une cible (connectez-vous avec votre PAT si la liste est vide).",
+			);
 		const title =
 			((document.getElementById("agent-task-title") || {}).value || "").trim() ||
 			"Mission IA";
 		let desc =
 			((document.getElementById("agent-task-desc") || {}).value || "").trim() || "";
 		if (!desc) throw new Error("Décrivez la mise à jour à effectuer.");
-		if (target === "gas") {
+		if (!isPC && target === this.getGasHubRepo()) {
 			const script = (document.getElementById("agent-gas-script") || {}).value;
 			if (script)
 				desc = "Script Google Apps Script concerné : " + script + ".\n\n" + desc;
 		}
-		return { target, title, desc };
+		return { target, isPC, title, desc };
+	}
+
+	// ---------- Orchestrateur : un seul point d'entrée ----------
+
+	async launchMission() {
+		let task;
+		try {
+			task = this.readTask();
+		} catch (e) {
+			this.app.showToast(e.message, "error");
+			return;
+		}
+
+		if (task.isPC) {
+			await this.launchBridgeMission(task);
+			return;
+		}
+
+		const owner = this.app.currentUser ? this.app.currentUser.login : null;
+		if (!owner) {
+			this.app.showToast("Connectez-vous avec votre PAT GitHub.", "error");
+			return;
+		}
+
+		if (this.getJulesKey()) {
+			this.renderStatus(
+				"⏳ Mission « " + task.title + " » confiée à Jules (orchestrateur) sur " + task.target + "...",
+			);
+			const ok = await this.launchJules(task, owner);
+			if (ok) return;
+			this.renderStatus("⚠️ Jules indisponible — bascule automatique vers Copilot...");
+			await this.launchCopilot(task, owner, true);
+		} else {
+			this.renderStatus(
+				"ℹ️ Clé Jules absente — mission confiée à Copilot sur " + task.target + "...",
+			);
+			await this.launchCopilot(task, owner, false);
+		}
 	}
 
 	// ---------- Jules (API v1alpha) ----------
@@ -186,129 +224,93 @@ export class AgentsHub {
 		return (data.sources || []).length;
 	}
 
-	async launchJules() {
-		let task;
-		try {
-			task = this.readTask();
-		} catch (e) {
-			this.app.showToast(e.message, "error");
-			return;
-		}
-		const owner = this.app.currentUser ? this.app.currentUser.login : null;
-		if (!owner) {
-			this.app.showToast("Connectez-vous avec votre PAT GitHub.", "error");
-			return;
-		}
-		let repo;
-		try {
-			repo = this.resolveRepoName();
-		} catch (e) {
-			this.app.showToast(e.message, "error");
-			return;
-		}
+	async launchJules(task, owner) {
 		const branch =
-			((document.getElementById("agent-branch") || {}).value || "").trim() || "main";
-
-		this.renderStatus("⏳ Lancement de la session Jules sur " + repo + "...");
+			((document.getElementById("agent-branch") || {}).value || "").trim() ||
+			"main";
 		try {
 			const session = await this.julesFetch("/sessions", {
 				method: "POST",
 				body: JSON.stringify({
 					prompt: task.desc,
 					sourceContext: {
-						source: "sources/github/" + owner + "/" + repo,
+						source: "sources/github/" + owner + "/" + task.target,
 						githubRepoContext: { startingBranch: branch },
 					},
 					automationMode: "AUTO_CREATE_PR",
 					title: task.title,
 				}),
 			});
-			this.app.showToast("Session Jules lancée !", "success");
+			this.app.showToast(
+				"Mission confiée à Jules — PR à venir sur " + task.target,
+				"success",
+			);
 			this.renderStatus(
-				"✅ Session Jules « " + task.title + " » lancée sur " + repo +
-				" (branche " + branch + "). Jules code, teste et ouvrira automatiquement une Pull Request à valider. " +
-				"Suivez la tâche sur jules.google ou via 🔄 Tâches & PRs.",
+				"✅ Mission « " + task.title + " » lancée sur " + task.target +
+				" (branche " + branch + "). Jules code, teste et ouvre une Pull Request à valider. Suivi : jules.google ou bouton 🔄.",
 				session.name || "",
 			);
+			return true;
 		} catch (err) {
-			this.app.showToast("Échec Jules : " + err.message, "error");
 			this.renderStatus("❌ Jules : " + err.message);
+			return false;
 		}
 	}
 
-	// ---------- Copilot (Issue → PR) ----------
+	// ---------- Copilot (Issue → PR, exécutant de secours ou par défaut) ----------
 
-	async launchCopilot() {
-		let task;
-		try {
-			task = this.readTask();
-		} catch (e) {
-			this.app.showToast(e.message, "error");
-			return;
-		}
-		const owner = this.app.currentUser ? this.app.currentUser.login : null;
-		if (!owner) {
-			this.app.showToast("Connectez-vous avec votre PAT GitHub.", "error");
-			return;
-		}
-		let repo;
-		try {
-			repo = this.resolveRepoName();
-		} catch (e) {
-			this.app.showToast(e.message, "error");
-			return;
-		}
-
-		this.renderStatus("⏳ Création de l'issue sur " + repo + "...");
+	async launchCopilot(task, owner, isFallback) {
 		try {
 			const issue = await this.app.gh.createIssue(
 				owner,
-				repo,
+				task.target,
 				task.title,
 				task.desc,
 				["copilot"],
 			);
 			const issueUrl =
 				issue.html_url ||
-				"https://github.com/" + owner + "/" + repo + "/issues/" + issue.number;
+				"https://github.com/" + owner + "/" + task.target + "/issues/" + issue.number;
 			try {
-				await this.ghFetch("/repos/" + owner + "/" + repo + "/issues/" + issue.number, {
-					method: "PATCH",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ assignees: ["copilot"] }),
-				});
-				this.app.showToast("Issue assignée à Copilot !", "success");
+				await this.ghFetch(
+					"/repos/" + owner + "/" + task.target + "/issues/" + issue.number,
+					{
+						method: "PATCH",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ assignees: ["copilot"] }),
+					},
+				);
+				this.app.showToast(
+					isFallback
+						? "Copilot a pris le relais — issue #" + issue.number
+						: "Mission assignée à Copilot",
+					"success",
+				);
 				this.renderStatus(
-					"✅ Issue #" + issue.number + " créée et assignée à @copilot sur " + repo +
-					". Copilot travaillera dessus et ouvrira une Pull Request à valider : " + issueUrl,
+					(isFallback ? "🔀 Jules indisponible → Copilot. " : "") +
+					"✅ Issue #" + issue.number + " créée et assignée à @copilot sur " + task.target +
+					". Copilot ouvrira une Pull Request à valider : " + issueUrl,
 				);
 			} catch (assignErr) {
-				this.app.showToast("Issue créée — assignation Copilot à vérifier", "info");
 				this.renderStatus(
-					"✅ Issue #" + issue.number + " créée sur " + repo +
-					" mais l'assignation à @copilot a échoué (" + assignErr.message +
-					"). Assignez Copilot manuellement : " + issueUrl,
+					"✅ Issue #" + issue.number + " créée sur " + task.target +
+					" — assignez @copilot manuellement (" + assignErr.message + ") : " + issueUrl,
 				);
 			}
+			return true;
 		} catch (err) {
-			this.app.showToast("Échec Copilot : " + err.message, "error");
 			this.renderStatus("❌ Copilot : " + err.message);
+			this.app.showToast("Échec Copilot : " + err.message, "error");
+			return false;
 		}
 	}
 
 	// ---------- PC Bridge (Antigravity) ----------
 
-	async launchBridgeMission() {
-		let task;
-		try {
-			task = this.readTask();
-		} catch (e) {
-			this.app.showToast(e.message, "error");
-			return;
-		}
+	async launchBridgeMission(task) {
 		const bridgeUrl = this.getBridgeUrl();
 		this.renderStatus(
-			"⏳ Envoi de la mission au PC via le Bridge (" + bridgeUrl + ")...",
+			"⏳ Mission « " + task.title + " » envoyée au PC Antigravity (" + bridgeUrl + ")...",
 		);
 		try {
 			const res = await fetch(bridgeUrl + "/missions/launch", {
@@ -327,8 +329,9 @@ export class AgentsHub {
 			const data = await res.json();
 			this.app.showToast("Mission transmise à Antigravity !", "success");
 			this.renderStatus(
-				"✅ Mission « " + task.title + " » transmise au PC (statut : " +
-				(data.status || "queued") + "). L'agent Antigravity exécutera la tâche avec approbation requise.",
+				"✅ Mission « " + task.title + " » reçue par le PC (statut : " +
+				(data.status || "queued") +
+				"). L'agent Antigravity exécutera la tâche avec approbation requise, comme depuis l'IDE.",
 			);
 		} catch (err) {
 			this.app.showToast("Bridge inaccessible : " + err.message, "error");
