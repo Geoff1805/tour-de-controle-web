@@ -841,3 +841,94 @@ body {
 .toast.error {
 	border-left-color: var(--accent-red);
 }
+
+/* ===== Améliorations Mobile-First ===== */
+.nav-tabs {
+	-webkit-overflow-scrolling: touch;
+	scroll-snap-type: x proximity;
+}
+
+.nav-tab {
+	scroll-snap-align: start;
+}
+
+@media (max-width: 767px) {
+	.main-container {
+		padding: 14px 12px 64px;
+	}
+
+	.app-header {
+		padding: 6px 12px;
+		gap: 8px;
+	}
+
+	.brand-subtitle {
+		display: none;
+	}
+
+	.nav-tabs {
+		order: 3;
+		width: 100%;
+	}
+
+	.nav-tab {
+		padding: 8px 11px;
+		min-height: 40px;
+		font-size: 0.78rem;
+	}
+
+	.header-actions {
+		margin-left: auto;
+	}
+
+	.status-pill {
+		max-width: 42vw;
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
+	}
+
+	.panel-card {
+		padding: 14px;
+	}
+
+	.hero-banner {
+		padding: 16px;
+	}
+
+	.modal-overlay {
+		padding: 10px;
+	}
+
+	.modal {
+		max-width: 100% !important;
+		max-height: 94vh;
+	}
+
+	.modal-footer {
+		justify-content: flex-start;
+	}
+
+	.toast-container {
+		left: 12px;
+		right: 12px;
+		bottom: 12px;
+	}
+
+	.toast {
+		font-size: 0.8rem;
+	}
+
+	.doc-nav-list {
+		max-height: 240px;
+	}
+
+	.code-editor-textarea {
+		min-height: 320px;
+	}
+
+	.markdown-viewer pre {
+		font-size: 0.76rem;
+	}
+}
+
