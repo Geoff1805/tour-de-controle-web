@@ -33,6 +33,10 @@ L'application est accessible directement sur GitHub Pages :
 
 ---
 
-## 📜 Licence
+## 📄 Licence
+
+MIT — voir [LICENSE](LICENSE).
+
+Copyright (c) 2026 Geoff1805
 
 MIT License (c) 2026 Geoff1805
