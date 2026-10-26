@@ -308,6 +308,53 @@
               <button type="button" id="btn-sync-bridge" class="btn btn-success btn-sm">🔄 Sync PC ↔ GitHub</button>
             </div>
           </div>
+
+          <div class="panel-card">
+            <div class="panel-title">
+              <span>🤖 Hub Agents IA — Mises à jour autonomes</span>
+              <span class="badge badge-ok">Jules & Copilot</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agent-target">1. Cible de la mise à jour :</label>
+              <select id="agent-target" class="form-select">
+                <option value="repo">📦 Dépôt GitHub → Pull Request à valider</option>
+                <option value="gas">📄 Script GAS (dépôt hub) → Pull Request à valider</option>
+                <option value="bridge">🖥️ PC Antigravity (via Bridge) → Mission approuvée</option>
+              </select>
+            </div>
+            <div class="form-group" id="agent-repo-row">
+              <label class="form-label" for="agent-repo">2. Dépôt cible :</label>
+              <select id="agent-repo" class="form-select"></select>
+            </div>
+            <div class="form-group" id="agent-gas-script-row" style="display: none;">
+              <label class="form-label" for="agent-gas-script">2b. Script Apps Script :</label>
+              <select id="agent-gas-script" class="form-select"></select>
+            </div>
+            <div class="form-group" id="agent-branch-row">
+              <label class="form-label" for="agent-branch">3. Branche de départ :</label>
+              <input type="text" id="agent-branch" class="form-input" value="main">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agent-task-title">4. Titre de la tâche :</label>
+              <input type="text" id="agent-task-title" class="form-input" placeholder="Ex : Ajouter une fonctionnalité...">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agent-task-desc">5. Description de la mise à jour :</label>
+              <textarea id="agent-task-desc" class="form-textarea" rows="3" placeholder="Critères d'acceptation, fichiers concernés, comportement attendu..."></textarea>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+              <button type="button" id="btn-launch-jules" class="btn btn-primary btn-sm" title="Session Jules asynchrone → PR automatique">🚀 Lancer Jules</button>
+              <button type="button" id="btn-launch-copilot" class="btn btn-success btn-sm" title="Issue assignée à @copilot → PR automatique">🐙 Assigner Copilot</button>
+              <button type="button" id="btn-launch-bridge-mission" class="btn btn-secondary btn-sm" title="Mission sur le PC via le Bridge (approbation requise)">🖥️ Mission PC</button>
+              <button type="button" id="btn-agents-refresh" class="btn btn-ghost btn-sm" title="Rafraîchir sessions Jules et PRs ouvertes">🔄 Tâches & PRs</button>
+            </div>
+            <div id="agents-status" class="markdown-viewer" style="background: #050811; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; min-height: 80px; max-height: 300px; overflow-y: auto;">
+              🤖 Prêt. Jules et Copilot ouvrent toujours une Pull Request à valider — jamais de commit direct.
+            </div>
+            <p class="help-text" style="margin-top: 10px;">
+              Prérequis : <strong>Jules</strong> (clé API dans Crédentiels + GitHub App Jules installée sur le dépôt), <strong>Copilot</strong> (agent activé dans les réglages du dépôt), <strong>Bridge PC</strong> (URL + token, serveur FastAPI en marche). Pour les scripts GAS, la PR se fait sur le dépôt hub ; le déploiement Apps Script reste via votre flux clasp habituel.
+            </p>
+          </div>
         </div>
       </div>
     </section>
@@ -373,6 +420,21 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 14px 0;">
 
+        <!-- 6. Google Jules -->
+        <div style="margin-bottom: 18px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label class="form-label" for="input-jules-key" style="margin: 0;">6. Google Jules (Agent de code → PR) :</label>
+            <span id="modal-jules-status" class="badge badge-public">Optionnel</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <input type="password" id="input-jules-key" class="form-input" style="flex: 1;" placeholder="Clé API Jules (jules.google → Settings)">
+            <button type="button" id="btn-test-jules-modal" class="btn btn-secondary btn-sm">Tester</button>
+          </div>
+          <span class="help-text">Agent asynchrone : clone le dépôt, code, teste et ouvre une PR à valider.</span>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 14px 0;">
+
         <!-- 5. Google Apps Script -->
         <div style="margin-bottom: 18px;">
           <label class="form-label" for="input-gas-token">5. Accès Google Apps Script (Workspace) :</label>
@@ -388,7 +450,9 @@
         <!-- 4. PC Bridge -->
         <div>
           <label class="form-label" for="input-bridge-url">4. URL Passerelle PC Bridge (Optionnel) :</label>
-          <input type="url" id="input-bridge-url" class="form-input" placeholder="http://localhost:8000">
+          <input type="url" id="input-bridge-url" class="form-input" placeholder="http://localhost:8765">
+          <label class="form-label" for="input-bridge-token" style="margin-top: 8px;">Token Bridge (AGY_BRIDGE_TOKEN) :</label>
+          <input type="password" id="input-bridge-token" class="form-input" placeholder="Bearer token du serveur FastAPI">
         </div>
         <!-- Option de persistance Sécurisée -->
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid var(--border-subtle);">
@@ -415,6 +479,6 @@
   </div>
 
   <div id="toast-container" class="toast-container"></div>
-  <script type="module" src="js/app.js?v=2.5.0"></script>
+  <script type="module" src="js/app.js?v=2.6.0"></script>
 </body>
 </html>

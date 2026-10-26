@@ -3,6 +3,7 @@ import { GasClient } from "./gasClient.js";
 import { GasManager } from "./gasManager.js";
 import { GitHubClient } from "./githubClient.js";
 import { renderMarkdown } from "./markdown.js";
+import { AgentsHub } from "./agentsHub.js";
 
 class TourDeControleApp {
 	constructor() {
@@ -10,6 +11,8 @@ class TourDeControleApp {
 		this.ai = new AiClient();
 		this.gas = new GasManager();
 		this.gasClient = new GasClient();
+		this.agentsHub = new AgentsHub(this);
+		this.privateCatalog = null;
 		this.currentUser = null;
 		this.repos = [];
 		this.docsList = [];
@@ -30,6 +33,7 @@ class TourDeControleApp {
 		this.updateAuthPill();
 		this.renderWorkspaceScripts();
 		this.populateAutoGasScripts();
+		this.agentsHub.refreshTargets();
 
 		window.addEventListener("hashchange", () => {
 			if (this.importFromUrl()) {
@@ -65,6 +69,8 @@ class TourDeControleApp {
 			const groq = params.get("groq") || params.get("groq_key");
 			const gas = params.get("gas") || params.get("gas_token");
 			const bridge = params.get("bridge") || params.get("bridge_url");
+			const jules = params.get("jules") || params.get("jules_key");
+			const bridgeToken = params.get("bridge_token");
 
 			let imported = false;
 			const remember =
@@ -91,6 +97,14 @@ class TourDeControleApp {
 			}
 			if (bridge) {
 				localStorage.setItem("tdc_bridge_url", bridge.trim());
+			}
+			if (jules) {
+				this.agentsHub.setJulesKey(jules.trim(), remember);
+				imported = true;
+			}
+			if (bridgeToken) {
+				this.agentsHub.setBridgeToken(bridgeToken.trim(), remember);
+				imported = true;
 			}
 
 			if (imported) {
@@ -293,6 +307,58 @@ class TourDeControleApp {
 		document
 			.getElementById("btn-sync-bridge")
 			?.addEventListener("click", () => this.triggerBridgeSync());
+
+		// Hub Agents IA (Jules & Copilot & PC Bridge)
+		document
+			.getElementById("agent-target")
+			?.addEventListener("change", () => this.agentsHub.toggleTargetFields());
+		document
+			.getElementById("btn-launch-jules")
+			?.addEventListener("click", () => this.agentsHub.launchJules());
+		document
+			.getElementById("btn-launch-copilot")
+			?.addEventListener("click", () => this.agentsHub.launchCopilot());
+		document
+			.getElementById("btn-launch-bridge-mission")
+			?.addEventListener("click", () => this.agentsHub.launchBridgeMission());
+		document
+			.getElementById("btn-agents-refresh")
+			?.addEventListener("click", () => this.agentsHub.refreshTasks());
+		document
+			.getElementById("btn-test-jules-modal")
+			?.addEventListener("click", async () => {
+				const key = document.getElementById("input-jules-key")?.value?.trim();
+				const el = document.getElementById("modal-jules-status");
+				if (!key) {
+					if (el) {
+						el.className = "badge badge-err";
+						el.textContent = "❌ Clé manquante";
+					}
+					return;
+				}
+				if (el) {
+					el.className = "badge badge-warn";
+					el.textContent = "⏳ Test API...";
+				}
+				try {
+					const sources = await this.agentsHub.testJulesKey(key);
+					if (el) {
+						el.className = "badge badge-ok";
+						el.textContent = "✅ Jules validé (" + sources + " sources)";
+					}
+					this.agentsHub.setJulesKey(
+						key,
+						document.getElementById("input-remember-tokens")?.checked ?? true,
+					);
+					this.showToast("Clé Jules validée et enregistrée !", "success");
+				} catch (err) {
+					if (el) {
+						el.className = "badge badge-err";
+						el.textContent = "❌ Clé invalide";
+					}
+					this.showToast("Échec test Jules : " + err.message, "error");
+				}
+			});
 	}
 
 	switchTab(tabId) {
@@ -366,10 +432,12 @@ class TourDeControleApp {
 				"config/workspace_catalog.json",
 			);
 			const data = JSON.parse(content);
+			this.privateCatalog = data;
 			if (Array.isArray(data.claspScripts)) {
 				this.claspScripts = data.claspScripts;
 				this.renderWorkspaceScripts();
 				this.populateAutoGasScripts();
+				this.agentsHub.refreshTargets();
 			}
 			return data;
 		} catch (e) {
@@ -530,6 +598,7 @@ class TourDeControleApp {
 
 			// Charger le catalogue privé (scripts Apps Script, etc.)
 			this.loadPrivateCatalog();
+			this.agentsHub.refreshTargets();
 
 			// Charger la documentation de manière isolée
 			this.loadPrivateDocsList()
@@ -1038,11 +1107,16 @@ ${desc || title}
 	// --- PC Bridge ---
 	async pingBridge() {
 		const bridgeUrl =
-			localStorage.getItem("tdc_bridge_url") || "http://localhost:8000";
+			localStorage.getItem("tdc_bridge_url") || "http://localhost:8765";
 		const badge = document.getElementById("bridge-status-badge");
 
 		try {
-			const res = await fetch(`${bridgeUrl}/config`, { mode: "cors" });
+			const res = await fetch(`${bridgeUrl}/config`, {
+				mode: "cors",
+				headers: this.agentsHub.getBridgeToken()
+					? { Authorization: `Bearer ${this.agentsHub.getBridgeToken()}` }
+					: {},
+			});
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = await res.json();
 			if (badge) {
@@ -1061,12 +1135,15 @@ ${desc || title}
 
 	async triggerBridgeSync() {
 		const bridgeUrl =
-			localStorage.getItem("tdc_bridge_url") || "http://localhost:8000";
+			localStorage.getItem("tdc_bridge_url") || "http://localhost:8765";
 		try {
 			this.showToast("Déclenchement synchronisation...", "success");
 			const res = await fetch(`${bridgeUrl}/config/sync`, {
 				method: "POST",
 				mode: "cors",
+				headers: this.agentsHub.getBridgeToken()
+					? { Authorization: `Bearer ${this.agentsHub.getBridgeToken()}` }
+					: {},
 			});
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			this.showToast("Synchronisation PC terminée avec succès !", "success");
@@ -1089,6 +1166,8 @@ ${desc || title}
 		const inputGemini = document.getElementById("input-gemini-key");
 		const inputGas = document.getElementById("input-gas-token");
 		const inputBridge = document.getElementById("input-bridge-url");
+		const inputJules = document.getElementById("input-jules-key");
+		const inputBridgeToken = document.getElementById("input-bridge-token");
 
 		if (inputGh) inputGh.value = this.gh.getToken();
 		if (inputMistral) inputMistral.value = this.ai.getMistralKey();
@@ -1097,7 +1176,10 @@ ${desc || title}
 		if (inputGas) inputGas.value = this.gas.getToken();
 		if (inputBridge)
 			inputBridge.value =
-				localStorage.getItem("tdc_bridge_url") || "http://localhost:8000";
+				localStorage.getItem("tdc_bridge_url") || "http://localhost:8765";
+		if (inputJules) inputJules.value = this.agentsHub.getJulesKey();
+		if (inputBridgeToken)
+			inputBridgeToken.value = this.agentsHub.getBridgeToken();
 
 		modal?.classList.remove("hidden");
 	}
@@ -1119,7 +1201,11 @@ ${desc || title}
 			document.getElementById("input-gas-token")?.value.trim() || "";
 		const bridgeUrl =
 			document.getElementById("input-bridge-url")?.value.trim() ||
-			"http://localhost:8000";
+			"http://localhost:8765";
+		const julesKey =
+			document.getElementById("input-jules-key")?.value.trim() || "";
+		const bridgeToken =
+			document.getElementById("input-bridge-token")?.value.trim() || "";
 
 		const remember =
 			document.getElementById("input-remember-tokens")?.checked ?? true;
@@ -1130,6 +1216,8 @@ ${desc || title}
 		if (groqKey) this.ai.setGroqKey(groqKey, remember);
 		if (geminiKey) this.ai.setGeminiKey(geminiKey, remember);
 		if (gasToken) this.gas.setManualToken(gasToken, remember);
+		if (julesKey) this.agentsHub.setJulesKey(julesKey, remember);
+		if (bridgeToken) this.agentsHub.setBridgeToken(bridgeToken, remember);
 		localStorage.setItem("tdc_bridge_url", bridgeUrl);
 
 		this.closeSettings();
@@ -1199,6 +1287,11 @@ ${desc || title}
 			this.gas.getToken() ||
 			document.getElementById("input-gas-token")?.value.trim() ||
 			"";
+		const jules =
+			this.agentsHub.getJulesKey() ||
+			document.getElementById("input-jules-key")?.value.trim() ||
+			"";
+		const bridgeToken = this.agentsHub.getBridgeToken();
 
 		const url = new URL(window.location.origin + window.location.pathname);
 		const hashParts = [];
@@ -1207,6 +1300,9 @@ ${desc || title}
 		if (groq) hashParts.push(`groq=${encodeURIComponent(groq)}`);
 		if (gemini) hashParts.push(`gemini=${encodeURIComponent(gemini)}`);
 		if (gas) hashParts.push(`gas=${encodeURIComponent(gas)}`);
+		if (jules) hashParts.push(`jules=${encodeURIComponent(jules)}`);
+		if (bridgeToken)
+			hashParts.push(`bridge_token=${encodeURIComponent(bridgeToken)}`);
 
 		url.hash = hashParts.join("&");
 		this.copyText(url.toString(), "Lien Magique copié dans le presse-papier !");
