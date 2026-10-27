@@ -237,12 +237,12 @@
 
           <div class="panel-card">
             <div class="panel-title">
-              <span>🖥️ Passerelle PC Bridge (Localhost / Tailscale)</span>
-              <span class="badge badge-private" id="bridge-status-badge">Hors-ligne</span>
+              <span>📥 File d'Attente Batch PC (Zero-Tunnel GitHub)</span>
+              <span class="badge badge-private" id="bridge-status-badge">Batch inactif</span>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-              <button type="button" id="btn-ping-bridge" class="btn btn-secondary btn-sm">🔍 Tester PC Bridge</button>
-              <button type="button" id="btn-sync-bridge" class="btn btn-success btn-sm">🔄 Sync PC ↔ GitHub</button>
+              <button type="button" id="btn-ping-bridge" class="btn btn-secondary btn-sm">🔄 Rafraîchir Batch</button>
+              <button type="button" id="btn-sync-bridge" class="btn btn-success btn-sm">➕ Batch Sync Config</button>
             </div>
           </div>
 
@@ -395,13 +395,13 @@
         </div>
       </div>
 
-      <!-- Section Approbations Temps Réel du PC Bridge -->
+      <!-- Section File d'Attente Batch Antigravity PC -->
       <div style="margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
           <h2 style="font-size: 1.05rem; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 8px;">
-            <span>⚡ Approbations Temps Réel (Agents Antigravity & PC Bridge)</span>
+            <span>📥 Missions en File d'Attente Batch (Exécution PC au Démarrage)</span>
           </h2>
-          <span class="badge badge-public">Human-In-The-Loop</span>
+          <span class="badge badge-public">Zero-Tunnel / Asynchrone</span>
         </div>
         <div id="bridge-approvals-list"></div>
       </div>
@@ -500,12 +500,14 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 14px 0;">
 
-        <!-- 4. PC Bridge -->
-        <div>
-          <label class="form-label" for="input-bridge-url">4. URL Passerelle PC Bridge (Optionnel) :</label>
-          <input type="url" id="input-bridge-url" class="form-input" placeholder="http://localhost:8765">
-          <label class="form-label" for="input-bridge-token" style="margin-top: 8px;">Token Bridge (AGY_BRIDGE_TOKEN) :</label>
-          <input type="password" id="input-bridge-token" class="form-input" placeholder="Bearer token du serveur FastAPI">
+        <!-- 4. Architecture Batch Zero-Tunnel -->
+        <div style="padding: 10px 12px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 6px;">
+          <label class="form-label" style="color: #38bdf8; font-weight: 700; margin-bottom: 4px;">4. Mode Batch Zero-Tunnel Actif :</label>
+          <p style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">
+            Le système utilise désormais la file d'attente GitHub (Issues <code>batch-mission</code>). Aucun tunnel, VPN ou port ouvert n'est requis. Le PC interroge automatiquement la file dès qu'il est allumé et connecté au Wi-Fi.
+          </p>
+          <input type="hidden" id="input-bridge-url" value="http://localhost:8765">
+          <input type="hidden" id="input-bridge-token" value="">
         </div>
         <!-- Option de persistance Sécurisée -->
         <div style="display: flex; align-items: center; gap: 10px; margin-top: 16px; padding: 12px 14px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; border: 1px solid var(--border-subtle);">

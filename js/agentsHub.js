@@ -109,7 +109,7 @@ export class AgentsHub {
 			.join("");
 		if (!repos.length)
 			html = `<option value="">— Connectez-vous (PAT) —</option>${html}`;
-		html += `<option value="${this.pcOptionValue}">🖥️ PC Antigravity (via Bridge — mission approuvée)</option>`;
+		html += `<option value="${this.pcOptionValue}">📥 File Batch PC (Exécution différée au démarrage)</option>`;
 		sel.innerHTML = html;
 		this.updateTargetUI();
 	}
@@ -328,40 +328,51 @@ export class AgentsHub {
 	// ---------- PC Bridge (Antigravity) ----------
 
 	async launchBridgeMission(task) {
-		const bridgeUrl = this.getBridgeUrl();
+		const owner = this.app.currentUser
+			? this.app.currentUser.login
+			: "Geoff1805";
+		const targetRepo =
+			!task.isPC && task.target ? task.target : "tour-de-controle";
 		this.renderStatus(
-			`⏳ Mission « ${task.title} » envoyée au PC Antigravity (${bridgeUrl})...`,
+			`⏳ Enregistrement de la mission « ${task.title} » dans la file Batch GitHub (${targetRepo})...`,
 		);
 		try {
-			const res = await fetch(`${bridgeUrl}/missions/launch`, {
-				method: "POST",
-				mode: "cors",
-				headers: {
-					"Content-Type": "application/json",
-					...this.bridgeHeaders(),
-				},
-				body: JSON.stringify({
-					prompt: `[${task.title}] ${task.desc}`,
-					require_approval: true,
-				}),
-			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = await res.json();
-			this.app.showToast("Mission transmise à Antigravity !", "success");
-			this.renderStatus(
-				"✅ Mission « " +
-					task.title +
-					" » reçue par le PC (statut : " +
-					(data.status || "queued") +
-					"). L'agent Antigravity exécutera la tâche avec approbation requise, comme depuis l'IDE.",
+			const body = `### 🎯 Mission Batch Antigravity (Zero-Tunnel)
+**Cible** : \`${targetRepo}\`
+**Date** : ${new Date().toISOString()}
+**Créé depuis** : Tour de Contrôle Web
+
+#### Instructions
+${task.desc}`;
+
+			const issue = await this.app.gh.createIssue(
+				owner,
+				targetRepo,
+				`[Batch] ${task.title}`,
+				body,
+				["batch-mission", "antigravity"],
 			);
+
+			const issueUrl =
+				issue.html_url ||
+				`https://github.com/${owner}/${targetRepo}/issues/${issue.number}`;
+			this.app.showToast("Mission enregistrée dans la file Batch !", "success");
+			this.renderStatus(
+				`✅ Mission « ${task.title} » enregistrée dans la file Batch (Issue #${issue.number}) !\n` +
+					`Le PC exécutera automatiquement cette mission dès sa connexion au Wi-Fi au démarrage ou via le runner batch.\n` +
+					`Lien de suivi : ${issueUrl}`,
+			);
+			if (this.app.bridge?.checkBatchStatus) {
+				this.app.bridge.checkBatchStatus();
+			}
+			return true;
 		} catch (err) {
-			this.app.showToast(`Bridge inaccessible : ${err.message}`, "error");
-			this.renderStatus(
-				"❌ Bridge : " +
-					err.message +
-					" — vérifiez l'URL et le token dans Crédentiels, et que le serveur FastAPI tourne sur le PC.",
+			this.app.showToast(
+				`Échec enregistrement Batch : ${err.message}`,
+				"error",
 			);
+			this.renderStatus(`❌ File Batch : ${err.message}`);
+			return false;
 		}
 	}
 

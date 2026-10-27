@@ -1,7 +1,7 @@
 # 🏛️ Tour de Contrôle Antigravity — Console Unifiée (Web & APK Mobile)
 
 > Centre de commandement et de supervision pour l'écosystème Antigravity.
-> Application unifiée disponible en **PWA Web**, en **APK Android natif** (`AntigravityController-v*.apk`), et connectée en direct au PC Bridge.
+> Application unifiée disponible en **PWA Web**, en **APK Android natif** (`AntigravityController-v*.apk`), et connectée via le moteur Batch Zero-Tunnel.
 
 ---
 
@@ -9,13 +9,13 @@
 
 1. **🏛️ Dépôts & CI/CD** : Supervision globale en direct de vos projets (`InstallAPK`, `Bullix`, `Needix`, `Improv-SQE-Consult`, etc.), statuts des workflows GitHub Actions et dispatching.
 2. **💬 Chat IA Conversationnel** :
-   - Assistant de pilotage conversationnel multi-moteurs (Google Gemini Flash, Mistral Codestral, Groq Cloud ~500 tps, et agent local PC Bridge).
+   - Assistant de pilotage conversationnel multi-moteurs (Google Gemini Flash, Mistral Codestral, Groq Cloud ~500 tps).
    - Suggestions de commandes en 1-tap, audit de santé des dépôts, injection de contexte automatique et rendu Markdown riche.
 3. **🤖 Hub Agents IA (Jules & Copilot)** : Orchestration autonome de missions, création d'issues `ai-solve` et dispatching automatique.
 4. **✅ Approbations & Human-in-the-Loop** :
-   - **⚡ Approbations Temps Réel (Agents Antigravity)** : Validation/rejet immédiat en 1-tap des commandes sensibles et diffs de code via le stream SSE du PC Bridge.
+   - **📥 File d'Attente Batch (Agents Antigravity)** : Programmation de missions en différé, exécutées automatiquement par le PC Windows au démarrage de session dès la connexion Wi-Fi.
    - **🐙 Pull Requests GitHub** : Review et fusion sécurisée des PRs sans commit direct.
-5. **🖥️ PC Bridge FastAPI & Tailscale** : Communication bidirectionnelle chiffrée avec le PC local via Tailscale WireGuard (`/health`, `/config/sync`, `/missions/launch`, `/stream/events`).
+5. **⚡ Moteur Batch Zero-Tunnel (GitHub Native)** : Plus aucun tunnel, VPN Tailscale ou port ouvert requis. Les missions sont déposées dans la file GitHub et dépilées par le runner local (`run-batch-runner.ps1` ou commande `batch`).
 
 ---
 

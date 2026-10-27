@@ -12,3 +12,6 @@ android/build/
 android/app/build/
 android/app/src/main/assets/www/
 
+
+__pycache__/
+*.pyc

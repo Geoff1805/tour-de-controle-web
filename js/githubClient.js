@@ -169,11 +169,56 @@ export class GitHubClient {
 		);
 	}
 
+	async ensureLabel(
+		owner,
+		repoName,
+		name = "batch-mission",
+		color = "38bdf8",
+		description = "Missions en attente du PC Antigravity",
+	) {
+		try {
+			await this.request(`/repos/${owner}/${repoName}/labels`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ name, color, description }),
+			});
+		} catch (_) {
+			// Le label existe déjà ou non bloquant
+		}
+	}
+
 	async createIssue(owner, repoName, title, body, labels = ["ai-solve"]) {
+		if (labels.includes("batch-mission")) {
+			await this.ensureLabel(owner, repoName, "batch-mission");
+		}
 		return this.request(`/repos/${owner}/${repoName}/issues`, {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({ title, body, labels }),
+		});
+	}
+
+	async searchIssues(query) {
+		return this.request(
+			`/search/issues?q=${encodeURIComponent(query)}&sort=created&order=asc`,
+		);
+	}
+
+	async closeIssue(owner, repoName, number, comment = null) {
+		if (comment) {
+			await this.request(
+				`/repos/${owner}/${repoName}/issues/${number}/comments`,
+				{
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ body: comment }),
+				},
+			);
+		}
+		return this.request(`/repos/${owner}/${repoName}/issues/${number}`, {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ state: "closed" }),
 		});
 	}
 

@@ -1304,51 +1304,35 @@ ${desc || title}
 		}
 	}
 
-	// --- PC Bridge ---
+	// --- Batch Queue Antigravity (Zero-Tunnel) ---
 	async pingBridge() {
-		const bridgeUrl =
-			localStorage.getItem("tdc_bridge_url") || "http://localhost:8765";
-		const badge = document.getElementById("bridge-status-badge");
-
+		this.showToast("Actualisation de la file Batch GitHub...", "info");
 		try {
-			const res = await fetch(`${bridgeUrl}/config`, {
-				mode: "cors",
-				headers: this.agentsHub.getBridgeToken()
-					? { Authorization: `Bearer ${this.agentsHub.getBridgeToken()}` }
-					: {},
-			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const data = await res.json();
-			if (badge) {
-				badge.className = "badge badge-ok";
-				badge.textContent = `En ligne (${data.git?.commit_sha ? data.git.commit_sha.substring(0, 7) : "Connecté"})`;
-			}
-			this.showToast("PC Bridge connecté !", "success");
+			await this.bridge.checkBatchStatus();
+			this.showToast("File d'attente Batch synchronisée !", "success");
 		} catch (err) {
-			if (badge) {
-				badge.className = "badge badge-err";
-				badge.textContent = "Hors-ligne";
-			}
-			this.showToast(`PC Bridge inaccessible (${err.message})`, "error");
+			this.showToast(`Erreur actualisation Batch : ${err.message}`, "error");
 		}
 	}
 
 	async triggerBridgeSync() {
-		const bridgeUrl =
-			localStorage.getItem("tdc_bridge_url") || "http://localhost:8765";
+		const owner = this.currentUser ? this.currentUser.login : "Geoff1805";
+		this.showToast("Ajout de la synchronisation au Batch PC...", "info");
 		try {
-			this.showToast("Déclenchement synchronisation...", "success");
-			const res = await fetch(`${bridgeUrl}/config/sync`, {
-				method: "POST",
-				mode: "cors",
-				headers: this.agentsHub.getBridgeToken()
-					? { Authorization: `Bearer ${this.agentsHub.getBridgeToken()}` }
-					: {},
-			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			this.showToast("Synchronisation PC terminée avec succès !", "success");
+			const _res = await this.gh.createIssue(
+				owner,
+				"tour-de-controle",
+				"[Batch] [Sync] Synchronisation Configurations PC ↔ GitHub",
+				`### 🔄 Demande de synchronisation automatique\n**Date** : ${new Date().toISOString()}\n**Exécution** : \`sync_config.ps1\` au démarrage ou via Batch Runner.`,
+				["batch-mission", "sync-config", "antigravity"],
+			);
+			this.showToast(
+				"Demande de synchronisation enregistrée dans le Batch PC !",
+				"success",
+			);
+			await this.bridge.checkBatchStatus();
 		} catch (err) {
-			this.showToast(`Erreur sync : ${err.message}`, "error");
+			this.showToast(`Erreur : ${err.message}`, "error");
 		}
 	}
 
