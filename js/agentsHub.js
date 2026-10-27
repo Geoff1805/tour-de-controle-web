@@ -69,27 +69,27 @@ export class AgentsHub {
 
 	bridgeHeaders() {
 		const token = this.getBridgeToken();
-		return token ? { Authorization: "Bearer " + token } : {};
+		return token ? { Authorization: `Bearer ${token}` } : {};
 	}
 
 	async ghFetch(path, options = {}) {
 		const token = this.app.gh ? this.app.gh.getToken() : "";
-		const res = await fetch("https://api.github.com" + path, {
+		const res = await fetch(`https://api.github.com${path}`, {
 			...options,
 			headers: {
 				Accept: "application/vnd.github.v3+json",
-				...(token ? { Authorization: "Bearer " + token } : {}),
+				...(token ? { Authorization: `Bearer ${token}` } : {}),
 				...(options.headers || {}),
 			},
 		});
-		if (!res.ok) throw new Error("GitHub HTTP " + res.status);
+		if (!res.ok) throw new Error(`GitHub HTTP ${res.status}`);
 		return res.status === 204 ? null : res.json();
 	}
 
 	// ---------- Cibles (liste unifiée) ----------
 
 	getGasHubRepo() {
-		return (this.app.privateCatalog || {}).gasHubRepo || null;
+		return this.app.privateCatalog?.gasHubRepo || null;
 	}
 
 	refreshTargets() {
@@ -99,64 +99,61 @@ export class AgentsHub {
 		let html = repos
 			.map(
 				(r) =>
-					'<option value="' + r.name + '">📦 ' + r.name +
-					(r.language ? " (" + r.language + ")" : "") +
+					'<option value="' +
+					r.name +
+					'">📦 ' +
+					r.name +
+					(r.language ? ` (${r.language})` : "") +
 					"</option>",
 			)
 			.join("");
 		if (!repos.length)
-			html = '<option value="">— Connectez-vous (PAT) —</option>' + html;
-		html +=
-			'<option value="' + this.pcOptionValue + '">🖥️ PC Antigravity (via Bridge — mission approuvée)</option>';
+			html = `<option value="">— Connectez-vous (PAT) —</option>${html}`;
+		html += `<option value="${this.pcOptionValue}">🖥️ PC Antigravity (via Bridge — mission approuvée)</option>`;
 		sel.innerHTML = html;
 		this.updateTargetUI();
 	}
 
 	updateTargetUI() {
-		const target = (document.getElementById("agent-target") || {}).value || "";
+		const target = document.getElementById("agent-target")?.value || "";
 		const isPC = target === this.pcOptionValue;
 		const isGasHub = !!target && !isPC && target === this.getGasHubRepo();
 		const gasRow = document.getElementById("agent-gas-script-row");
 		const submenu = document.getElementById("gas-context-submenu");
 		const branchRow = document.getElementById("agent-branch-row");
-		const showGas =
-			isGasHub && this.app.claspScripts && this.app.claspScripts.length;
+		const showGas = isGasHub && this.app.claspScripts?.length;
 		if (gasRow) gasRow.style.display = showGas ? "" : "none";
 		if (submenu) submenu.style.display = showGas ? "" : "none";
 		if (showGas && gasRow) {
 			const gasSel = document.getElementById("agent-gas-script");
 			if (gasSel)
 				gasSel.innerHTML = this.app.claspScripts
-					.map(
-						(s) =>
-							'<option value="' + s.id + '">' + s.name + "</option>",
-					)
+					.map((s) => `<option value="${s.id}">${s.name}</option>`)
 					.join("");
 		}
 		if (branchRow) branchRow.style.display = isPC ? "none" : "";
 	}
 
 	readTask() {
-		const target = (document.getElementById("agent-target") || {}).value || "";
+		const target = document.getElementById("agent-target")?.value || "";
 		const isPC = target === this.pcOptionValue;
 		if (!target)
 			throw new Error(
 				"Sélectionnez une cible (connectez-vous avec votre PAT si la liste est vide).",
 			);
 		const title =
-			((document.getElementById("agent-task-title") || {}).value || "").trim() ||
+			(document.getElementById("agent-task-title")?.value || "").trim() ||
 			"Mission IA";
 		let desc =
-			((document.getElementById("agent-task-desc") || {}).value || "").trim() || "";
+			(document.getElementById("agent-task-desc")?.value || "").trim() || "";
 		if (!desc) throw new Error("Décrivez la mise à jour à effectuer.");
 		if (!isPC && target === this.getGasHubRepo()) {
 			const gasSel = document.getElementById("agent-gas-script");
-			const script =
-				gasSel && gasSel.selectedOptions && gasSel.selectedOptions[0]
-					? gasSel.selectedOptions[0].textContent.trim()
-					: "";
+			const script = gasSel?.selectedOptions?.[0]
+				? gasSel.selectedOptions[0].textContent.trim()
+				: "";
 			if (script)
-				desc = "Script Google Apps Script concerné : " + script + ".\n\n" + desc;
+				desc = `Script Google Apps Script concerné : ${script}.\n\n${desc}`;
 		}
 		return { target, isPC, title, desc };
 	}
@@ -185,15 +182,17 @@ export class AgentsHub {
 
 		if (this.getJulesKey()) {
 			this.renderStatus(
-				"⏳ Mission « " + task.title + " » confiée à Jules (orchestrateur) sur " + task.target + "...",
+				`⏳ Mission « ${task.title} » confiée à Jules (orchestrateur) sur ${task.target}...`,
 			);
 			const ok = await this.launchJules(task, owner);
 			if (ok) return;
-			this.renderStatus("⚠️ Jules indisponible — bascule automatique vers Copilot...");
+			this.renderStatus(
+				"⚠️ Jules indisponible — bascule automatique vers Copilot...",
+			);
 			await this.launchCopilot(task, owner, true);
 		} else {
 			this.renderStatus(
-				"ℹ️ Clé Jules absente — mission confiée à Copilot sur " + task.target + "...",
+				`ℹ️ Clé Jules absente — mission confiée à Copilot sur ${task.target}...`,
 			);
 			await this.launchCopilot(task, owner, false);
 		}
@@ -204,7 +203,9 @@ export class AgentsHub {
 	async julesFetch(endpoint, options = {}) {
 		const key = this.getJulesKey();
 		if (!key)
-			throw new Error("Clé API Jules manquante. Configurez-la dans Crédentiels.");
+			throw new Error(
+				"Clé API Jules manquante. Configurez-la dans Crédentiels.",
+			);
 		const res = await fetch(this.julesBase + endpoint, {
 			...options,
 			headers: {
@@ -215,33 +216,30 @@ export class AgentsHub {
 		});
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
-			throw new Error(
-				(err.error && err.error.message) || "Erreur Jules HTTP " + res.status,
-			);
+			throw new Error(err.error?.message || `Erreur Jules HTTP ${res.status}`);
 		}
 		return res.json();
 	}
 
 	async testJulesKey(key) {
-		const res = await fetch(this.julesBase + "/sources", {
+		const res = await fetch(`${this.julesBase}/sources`, {
 			headers: { "X-Goog-Api-Key": key },
 		});
-		if (!res.ok) throw new Error("HTTP " + res.status);
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
 		const data = await res.json();
 		return (data.sources || []).length;
 	}
 
 	async launchJules(task, owner) {
 		const branch =
-			((document.getElementById("agent-branch") || {}).value || "").trim() ||
-			"main";
+			(document.getElementById("agent-branch")?.value || "").trim() || "main";
 		try {
 			const session = await this.julesFetch("/sessions", {
 				method: "POST",
 				body: JSON.stringify({
 					prompt: task.desc,
 					sourceContext: {
-						source: "sources/github/" + owner + "/" + task.target,
+						source: `sources/github/${owner}/${task.target}`,
 						githubRepoContext: { startingBranch: branch },
 					},
 					automationMode: "AUTO_CREATE_PR",
@@ -249,17 +247,22 @@ export class AgentsHub {
 				}),
 			});
 			this.app.showToast(
-				"Mission confiée à Jules — PR à venir sur " + task.target,
+				`Mission confiée à Jules — PR à venir sur ${task.target}`,
 				"success",
 			);
 			this.renderStatus(
-				"✅ Mission « " + task.title + " » lancée sur " + task.target +
-				" (branche " + branch + "). Jules code, teste et ouvre une Pull Request à valider. Suivi : jules.google ou bouton 🔄.",
+				"✅ Mission « " +
+					task.title +
+					" » lancée sur " +
+					task.target +
+					" (branche " +
+					branch +
+					"). Jules code, teste et ouvre une Pull Request à valider. Suivi : jules.google ou bouton 🔄.",
 				session.name || "",
 			);
 			return true;
 		} catch (err) {
-			this.renderStatus("❌ Jules : " + err.message);
+			this.renderStatus(`❌ Jules : ${err.message}`);
 			return false;
 		}
 	}
@@ -277,10 +280,10 @@ export class AgentsHub {
 			);
 			const issueUrl =
 				issue.html_url ||
-				"https://github.com/" + owner + "/" + task.target + "/issues/" + issue.number;
+				`https://github.com/${owner}/${task.target}/issues/${issue.number}`;
 			try {
 				await this.ghFetch(
-					"/repos/" + owner + "/" + task.target + "/issues/" + issue.number,
+					`/repos/${owner}/${task.target}/issues/${issue.number}`,
 					{
 						method: "PATCH",
 						headers: { "Content-Type": "application/json" },
@@ -289,25 +292,35 @@ export class AgentsHub {
 				);
 				this.app.showToast(
 					isFallback
-						? "Copilot a pris le relais — issue #" + issue.number
+						? `Copilot a pris le relais — issue #${issue.number}`
 						: "Mission assignée à Copilot",
 					"success",
 				);
 				this.renderStatus(
 					(isFallback ? "🔀 Jules indisponible → Copilot. " : "") +
-					"✅ Issue #" + issue.number + " créée et assignée à @copilot sur " + task.target +
-					". Copilot ouvrira une Pull Request à valider : " + issueUrl,
+						"✅ Issue #" +
+						issue.number +
+						" créée et assignée à @copilot sur " +
+						task.target +
+						". Copilot ouvrira une Pull Request à valider : " +
+						issueUrl,
 				);
 			} catch (assignErr) {
 				this.renderStatus(
-					"✅ Issue #" + issue.number + " créée sur " + task.target +
-					" — assignez @copilot manuellement (" + assignErr.message + ") : " + issueUrl,
+					"✅ Issue #" +
+						issue.number +
+						" créée sur " +
+						task.target +
+						" — assignez @copilot manuellement (" +
+						assignErr.message +
+						") : " +
+						issueUrl,
 				);
 			}
 			return true;
 		} catch (err) {
-			this.renderStatus("❌ Copilot : " + err.message);
-			this.app.showToast("Échec Copilot : " + err.message, "error");
+			this.renderStatus(`❌ Copilot : ${err.message}`);
+			this.app.showToast(`Échec Copilot : ${err.message}`, "error");
 			return false;
 		}
 	}
@@ -317,10 +330,10 @@ export class AgentsHub {
 	async launchBridgeMission(task) {
 		const bridgeUrl = this.getBridgeUrl();
 		this.renderStatus(
-			"⏳ Mission « " + task.title + " » envoyée au PC Antigravity (" + bridgeUrl + ")...",
+			`⏳ Mission « ${task.title} » envoyée au PC Antigravity (${bridgeUrl})...`,
 		);
 		try {
-			const res = await fetch(bridgeUrl + "/missions/launch", {
+			const res = await fetch(`${bridgeUrl}/missions/launch`, {
 				method: "POST",
 				mode: "cors",
 				headers: {
@@ -328,23 +341,26 @@ export class AgentsHub {
 					...this.bridgeHeaders(),
 				},
 				body: JSON.stringify({
-					prompt: "[" + task.title + "] " + task.desc,
+					prompt: `[${task.title}] ${task.desc}`,
 					require_approval: true,
 				}),
 			});
-			if (!res.ok) throw new Error("HTTP " + res.status);
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
 			const data = await res.json();
 			this.app.showToast("Mission transmise à Antigravity !", "success");
 			this.renderStatus(
-				"✅ Mission « " + task.title + " » reçue par le PC (statut : " +
-				(data.status || "queued") +
-				"). L'agent Antigravity exécutera la tâche avec approbation requise, comme depuis l'IDE.",
+				"✅ Mission « " +
+					task.title +
+					" » reçue par le PC (statut : " +
+					(data.status || "queued") +
+					"). L'agent Antigravity exécutera la tâche avec approbation requise, comme depuis l'IDE.",
 			);
 		} catch (err) {
-			this.app.showToast("Bridge inaccessible : " + err.message, "error");
+			this.app.showToast(`Bridge inaccessible : ${err.message}`, "error");
 			this.renderStatus(
-				"❌ Bridge : " + err.message +
-				" — vérifiez l'URL et le token dans Crédentiels, et que le serveur FastAPI tourne sur le PC.",
+				"❌ Bridge : " +
+					err.message +
+					" — vérifiez l'URL et le token dans Crédentiels, et que le serveur FastAPI tourne sur le PC.",
 			);
 		}
 	}
@@ -366,24 +382,26 @@ export class AgentsHub {
 				for (const s of sessions) {
 					const pr =
 						(s.outputs || [])
-							.map((o) => (o.pullRequest || {}).url)
+							.map((o) => o.pullRequest?.url)
 							.filter(Boolean)[0] || null;
 					html +=
 						'<div class="project-card" style="margin-bottom: 8px;"><div>' +
 						'<div class="project-card-header"><span class="project-name">' +
 						(s.title || s.name || "Session") +
 						"</span>" +
-						'<span class="badge ' + (pr ? "badge-ok" : "badge-warn") + '">' +
+						'<span class="badge ' +
+						(pr ? "badge-ok" : "badge-warn") +
+						'">' +
 						(pr ? "PR prête" : "En cours") +
 						"</span></div>" +
 						'<div class="project-meta" style="margin-top: 6px;">' +
 						(pr
-							? '<a href="' + pr + '" target="_blank" rel="noopener">Voir la Pull Request</a>'
+							? `<a href="${pr}" target="_blank" rel="noopener">Voir la Pull Request</a>`
 							: "Traitement asynchrone en cours...") +
 						"</div></div></div>";
 				}
 			} catch (e) {
-				html += '<p class="help-text">⚠️ Jules indisponible : ' + e.message + "</p>";
+				html += `<p class="help-text">⚠️ Jules indisponible : ${e.message}</p>`;
 			}
 		}
 
@@ -393,7 +411,7 @@ export class AgentsHub {
 			const repos = (this.app.repos || []).slice(0, 6);
 			const results = await Promise.allSettled(
 				repos.map((r) =>
-					this.ghFetch("/repos/" + owner + "/" + r.name + "/pulls?state=open&per_page=5"),
+					this.ghFetch(`/repos/${owner}/${r.name}/pulls?state=open&per_page=5`),
 				),
 			);
 			let prCount = 0;
@@ -407,10 +425,12 @@ export class AgentsHub {
 						pr.title +
 						"</span>" +
 						'<span class="badge badge-public">' +
-						(pr.head && pr.head.repo ? pr.head.repo.name : "dépôt") +
+						(pr.head?.repo ? pr.head.repo.name : "dépôt") +
 						"</span></div>" +
 						'<div class="project-meta" style="margin-top: 6px;">' +
-						'<a href="' + pr.html_url + '" target="_blank" rel="noopener">Réviser / Fusionner</a>' +
+						'<a href="' +
+						pr.html_url +
+						'" target="_blank" rel="noopener">Réviser / Fusionner</a>' +
 						"</div></div></div>";
 				}
 			}
@@ -434,7 +454,7 @@ export class AgentsHub {
 				'<p style="margin: 0 0 6px;">' +
 				text +
 				"</p>" +
-				(extra ? '<p class="help-text">Session : ' + extra + "</p>" : "");
+				(extra ? `<p class="help-text">Session : ${extra}</p>` : "");
 		}
 	}
 }

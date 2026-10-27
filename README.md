@@ -1,42 +1,59 @@
-# 🏛️ Tour de Contrôle Antigravity — Web Console
+# 🏛️ Tour de Contrôle Antigravity — Console Unifiée (Web & APK Mobile)
 
-> Interface Web Client-Side Zero-Knowledge pour la Tour de Contrôle et l'Écosystème Antigravity.
+> Centre de commandement et de supervision pour l'écosystème Antigravity.
+> Application unifiée disponible en **PWA Web**, en **APK Android natif** (`AntigravityController-v*.apk`), et connectée en direct au PC Bridge.
 
-Cette application web statique s'exécute **à 100% dans le navigateur de l'utilisateur** sans aucun serveur intermédiaire.
+---
+
+## 🌟 Fonctionnalités Unifiées
+
+1. **🏛️ Dépôts & CI/CD** : Supervision globale en direct de vos projets (`InstallAPK`, `Bullix`, `Needix`, `Improv-SQE-Consult`, etc.), statuts des workflows GitHub Actions et dispatching.
+2. **💬 Chat IA Conversationnel** :
+   - Assistant de pilotage conversationnel multi-moteurs (Google Gemini Flash, Mistral Codestral, Groq Cloud ~500 tps, et agent local PC Bridge).
+   - Suggestions de commandes en 1-tap, audit de santé des dépôts, injection de contexte automatique et rendu Markdown riche.
+3. **🤖 Hub Agents IA (Jules & Copilot)** : Orchestration autonome de missions, création d'issues `ai-solve` et dispatching automatique.
+4. **✅ Approbations & Human-in-the-Loop** :
+   - **⚡ Approbations Temps Réel (Agents Antigravity)** : Validation/rejet immédiat en 1-tap des commandes sensibles et diffs de code via le stream SSE du PC Bridge.
+   - **🐙 Pull Requests GitHub** : Review et fusion sécurisée des PRs sans commit direct.
+5. **🖥️ PC Bridge FastAPI & Tailscale** : Communication bidirectionnelle chiffrée avec le PC local via Tailscale WireGuard (`/health`, `/config/sync`, `/missions/launch`, `/stream/events`).
 
 ---
 
 ## 🔒 Architecture "Zero-Knowledge"
 
-- **Zéro donnée en dur** : Aucun nom de projet privé, aucune règle d'architecture ni aucun secret n'est contenu dans ce dépôt.
-- **Mode Non Connecté** : Les visiteurs anonymes voient une interface neutre les invitant à renseigner leur Personal Access Token (PAT) GitHub.
-- **Mode Connecté** : Avec votre token (conservé exclusivement dans le `localStorage` de votre navigateur), l'application interroge en direct l'API GitHub pour charger vos dépôts privés, consulter vos statuts CI/CD et lire vos règles.
+- **Zéro donnée en dur** : Aucun secret, token GitHub ou clé IA n'est stocké dans le dépôt public.
+- **Stockage Client Sécurisé** : Vos clés (PAT GitHub, Gemini, Mistral, Groq, Bridge Token) sont conservées exclusivement dans le `localStorage` de votre navigateur ou de votre application mobile.
 
 ---
 
-## 🤖 Hub Agents IA
+## 📱 Distribution & Accès
 
-L'onglet **Missions & IA** intègre un Hub d'agents autonomes pour les mises à jour de code :
-
-- **Google Jules** (API v1alpha, clé stockée côté client uniquement) : session asynchrone, l'agent code, teste et ouvre une **Pull Request automatique**.
-- **GitHub Copilot** : la tâche devient une issue assignée à @copilot, qui ouvre une **Pull Request à valider**.
-- **PC Bridge (Antigravity)** : la mission est envoyée au PC via le serveur FastAPI (/missions/launch, approbation requise).
-
-Orchestration unifiée : Jules est l'exécutant par défaut sur les dépôts, Copilot prend le relais automatiquement, et le PC Antigravity reçoit les missions via le Bridge avec approbation requise. Toute modification passe par une **Pull Request à valider** — jamais de commit direct.
-
----
-
-## 🚀 Utilisation en Ligne
-
-L'application est accessible directement sur GitHub Pages :
+### 1. Accès Web & PWA (Tous écrans)
+Accessible directement sur GitHub Pages :
 👉 **[https://geoff1805.github.io/tour-de-controle-web/](https://geoff1805.github.io/tour-de-controle-web/)**
+*(Installable en 1-clic sur Android et iOS comme application autonome via le menu du navigateur)*.
+
+### 2. APK Android (`InstallAPK`)
+L'APK officiel est généré automatiquement par GitHub Actions à chaque version :
+- Nom normalisé : `AntigravityController-v<versionName>.apk`
+- Zéro archive ZIP superflue : directement téléchargeable et installable via [InstallAPK](https://github.com/Geoff1805/InstallAPK).
 
 ---
 
-## 📄 Licence
+## 🚀 Compilation Locale de l'APK Android
 
-MIT — voir [LICENSE](LICENSE).
+```powershell
+cd android
 
-Copyright (c) 2026 Geoff1805
+# Copier les assets Web récents
+./gradlew copyWebAssets
 
+# Compiler l'APK Android Release normalisé
+./gradlew assembleRelease
+```
+L'APK compilé se trouve dans `android/app/build/outputs/apk/release/app-release.apk` et est distribué sous `build-artifacts/AntigravityController-v<versionName>.apk`.
+
+---
+
+## 📜 Licence
 MIT License (c) 2026 Geoff1805

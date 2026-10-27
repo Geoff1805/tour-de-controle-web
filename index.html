@@ -36,6 +36,9 @@
       <button type="button" class="nav-tab" data-tab="ai" role="tab" aria-selected="false">
         🤖 Missions & IA
       </button>
+      <button type="button" class="nav-tab" data-tab="chat" role="tab" aria-selected="false">
+        💬 Chat IA
+      </button>
       <button type="button" class="nav-tab" data-tab="approvals" role="tab" aria-selected="false">
         ✅ Approbations (<span id="header-pr-count">0</span>)
       </button>
@@ -323,6 +326,61 @@
       </div>
     </section>
 
+    <!-- TAB: CHAT IA ASSISTANT UNIFIE -->
+    <section id="tab-chat" class="tab-panel hidden">
+      <div class="chat-container">
+        <div class="chat-header">
+          <div class="chat-header-title">
+            <h2>💬 Assistant Conversationnel Antigravity</h2>
+            <p>Supervision, commandes en langage naturel et audit de l'écosystème</p>
+          </div>
+          <div class="chat-header-controls">
+            <div class="control-group">
+              <label for="chat-provider-select">Moteur IA :</label>
+              <select id="chat-provider-select" class="form-select chat-select">
+                <option value="gemini">Google Gemini Flash (Gratuit)</option>
+                <option value="groq">Groq Cloud Qwen (500 t/s)</option>
+                <option value="mistral">Mistral Codestral (Élite)</option>
+                <option value="bridge">Antigravity PC Bridge (Local)</option>
+              </select>
+            </div>
+            <div class="control-group">
+              <label for="chat-model-select">Modèle :</label>
+              <select id="chat-model-select" class="form-select chat-select"></select>
+            </div>
+            <div class="control-group-check">
+              <label>
+                <input type="checkbox" id="chat-inject-context" checked>
+                <span>Contexte Dépôts</span>
+              </label>
+            </div>
+            <button type="button" id="btn-chat-clear" class="btn btn-secondary btn-sm" title="Effacer l'historique">
+              🗑️ Effacer
+            </button>
+          </div>
+        </div>
+
+        <div id="chat-messages-list" class="chat-messages-list"></div>
+
+        <div class="chat-footer">
+          <div id="chat-quick-chips" class="chat-quick-chips">
+            <button type="button" class="chat-chip" data-prompt="📊 Synthèse complète : Quel est le statut global de mes dépôts et des workflows CI/CD ?">📊 Statut Dépôts</button>
+            <button type="button" class="chat-chip" data-prompt="🛡️ Audit de sécurité : Y a-t-il des alertes Dependabot ou des vulnérabilités actives ?">🛡️ Sécurité Dependabot</button>
+            <button type="button" class="chat-chip" data-prompt="🔄 Synchronise les configurations partagées avec le PC Bridge">🔄 Sync Configs</button>
+            <button type="button" class="chat-chip" data-prompt="⚡ Vérifie l'état de la passerelle PC Bridge et de la connectivité Tailscale">⚡ Statut PC Bridge</button>
+            <button type="button" class="chat-chip" data-prompt="📦 Vérifie les versions actuelles des applications (InstallAPK, Bullix, Needix)">📦 Versions Apps</button>
+          </div>
+          <form id="chat-form" class="chat-form">
+            <textarea id="chat-input" class="chat-input" rows="2" placeholder="Posez une question, demandez une action, analysez un bug... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"></textarea>
+            <button type="submit" id="btn-chat-send" class="btn btn-primary btn-chat-send">
+              <span>Envoyer</span>
+              <span class="send-icon">➤</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
     <!-- TAB 4: APPROBATIONS GITHUB (Pull Requests) -->
     <section id="tab-approvals" class="tab-panel hidden">
       <div class="hero-banner">
@@ -336,6 +394,21 @@
           <button type="button" id="btn-refresh-approvals" class="btn btn-primary btn-sm">🔄 Rafraîchir</button>
         </div>
       </div>
+
+      <!-- Section Approbations Temps Réel du PC Bridge -->
+      <div style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h2 style="font-size: 1.05rem; color: #38bdf8; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <span>⚡ Approbations Temps Réel (Agents Antigravity & PC Bridge)</span>
+          </h2>
+          <span class="badge badge-public">Human-In-The-Loop</span>
+        </div>
+        <div id="bridge-approvals-list"></div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 24px 0 16px;">
+
+      <h2 style="font-size: 1.05rem; color: #a5b4fc; margin: 0 0 12px;">🐙 Pull Requests Dépôts GitHub</h2>
       <div id="approvals-list" class="projects-grid" style="grid-template-columns: 1fr; align-content: start;"></div>
     </section>
 
@@ -460,5 +533,14 @@
 
   <div id="toast-container" class="toast-container"></div>
   <script type="module" src="js/app.js?v=2.9.0"></script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW reg error:', err));
+      });
+    }
+  </script>
+
 </body>
 </html>

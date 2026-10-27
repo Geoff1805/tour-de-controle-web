@@ -200,32 +200,24 @@ export class GitHubClient {
 		);
 		return results
 			.flat()
-			.sort((a, b) =>
-				(b.updated_at || "").localeCompare(a.updated_at || ""),
-			);
+			.sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
 	}
 
 	/** Approbation formelle : review APPROVE sans fusion. */
 	async approvePullRequest(owner, repoName, number) {
-		return this.request(
-			`/repos/${owner}/${repoName}/pulls/${number}/reviews`,
-			{
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ event: "APPROVE" }),
-			},
-		);
+		return this.request(`/repos/${owner}/${repoName}/pulls/${number}/reviews`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ event: "APPROVE" }),
+		});
 	}
 
 	async mergePullRequest(owner, repoName, number, mergeMethod = "squash") {
-		return this.request(
-			`/repos/${owner}/${repoName}/pulls/${number}/merge`,
-			{
-				method: "PUT",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ merge_method: mergeMethod }),
-			},
-		);
+		return this.request(`/repos/${owner}/${repoName}/pulls/${number}/merge`, {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ merge_method: mergeMethod }),
+		});
 	}
 
 	async closePullRequest(owner, repoName, number) {

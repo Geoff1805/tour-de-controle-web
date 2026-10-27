@@ -1,9 +1,11 @@
+import { AgentsHub } from "./agentsHub.js";
 import { AiClient } from "./aiClient.js";
+import { BridgeManager } from "./bridgeManager.js";
+import { ChatManager } from "./chatManager.js";
 import { GasClient } from "./gasClient.js";
 import { GasManager } from "./gasManager.js";
 import { GitHubClient } from "./githubClient.js";
 import { renderMarkdown } from "./markdown.js";
-import { AgentsHub } from "./agentsHub.js";
 
 class TourDeControleApp {
 	constructor() {
@@ -12,6 +14,8 @@ class TourDeControleApp {
 		this.gas = new GasManager();
 		this.gasClient = new GasClient();
 		this.agentsHub = new AgentsHub(this);
+		this.chat = new ChatManager(this.ai, this);
+		this.bridge = new BridgeManager(this);
 		this.privateCatalog = null;
 		this.currentUser = null;
 		this.repos = [];
@@ -34,6 +38,8 @@ class TourDeControleApp {
 		this.updateAuthPill();
 		this.renderWorkspaceScripts();
 		this.agentsHub.refreshTargets();
+		this.chat.init();
+		this.bridge.init();
 
 		window.addEventListener("hashchange", () => {
 			if (this.importFromUrl()) {
@@ -73,8 +79,7 @@ class TourDeControleApp {
 			const bridgeToken = params.get("bridge_token");
 
 			let imported = false;
-			const remember =
-				localStorage.getItem("tdc_remember_tokens") !== "false";
+			const remember = localStorage.getItem("tdc_remember_tokens") !== "false";
 			if (gh) {
 				this.gh.setToken(gh.trim(), remember);
 				imported = true;
@@ -369,7 +374,7 @@ class TourDeControleApp {
 					const sources = await this.agentsHub.testJulesKey(key);
 					if (el) {
 						el.className = "badge badge-ok";
-						el.textContent = "✅ Jules validé (" + sources + " sources)";
+						el.textContent = `✅ Jules validé (${sources} sources)`;
 					}
 					this.agentsHub.setJulesKey(
 						key,
@@ -381,7 +386,7 @@ class TourDeControleApp {
 						el.className = "badge badge-err";
 						el.textContent = "❌ Clé invalide";
 					}
-					this.showToast("Échec test Jules : " + err.message, "error");
+					this.showToast(`Échec test Jules : ${err.message}`, "error");
 				}
 			});
 	}
@@ -397,6 +402,10 @@ class TourDeControleApp {
 
 		if (tabId === "approvals") {
 			this.loadApprovals();
+			this.bridge?.renderApprovals();
+		}
+		if (tabId === "chat") {
+			this.chat?.scrollToBottom();
 		}
 	}
 
@@ -462,10 +471,7 @@ class TourDeControleApp {
 					.map((r) => r.name)
 					.slice(0, 15);
 			}
-			const prs = await this.gh.listPullRequestsAcrossRepos(
-				owner,
-				repoNames,
-			);
+			const prs = await this.gh.listPullRequestsAcrossRepos(owner, repoNames);
 			this.approvals = prs;
 			const counter = document.getElementById("header-pr-count");
 			if (counter) counter.textContent = String(prs.length);
@@ -532,7 +538,9 @@ class TourDeControleApp {
 			),
 		];
 		const original = btn ? btn.textContent : "";
-		buttons.forEach((b) => (b.disabled = true));
+		for (const b of buttons) {
+			b.disabled = true;
+		}
 		if (btn) btn.textContent = "⏳ ...";
 		try {
 			if (action === "approve") {
@@ -556,7 +564,9 @@ class TourDeControleApp {
 		} catch (err) {
 			console.error("Erreur approbation PR :", err);
 			this.showToast(`Échec de l'action : ${err.message}`, "error");
-			buttons.forEach((b) => (b.disabled = false));
+			for (const b of buttons) {
+				b.disabled = false;
+			}
 			if (btn) btn.textContent = original;
 		}
 	}
@@ -586,7 +596,8 @@ class TourDeControleApp {
 		return [
 			{
 				name: "tour-de-controle-web",
-				description: "Console Web Client-Side Zero-Knowledge hébergée sur GitHub Pages.",
+				description:
+					"Console Web Client-Side Zero-Knowledge hébergée sur GitHub Pages.",
 				language: "JavaScript",
 				private: false,
 				html_url: "https://github.com/Geoff1805/tour-de-controle-web",
@@ -594,7 +605,8 @@ class TourDeControleApp {
 			},
 			{
 				name: "Interdevappscript",
-				description: "Studio Web Client-Side pour l'édition et le test de scripts Google Apps Script via OAuth2 GIS.",
+				description:
+					"Studio Web Client-Side pour l'édition et le test de scripts Google Apps Script via OAuth2 GIS.",
 				language: "JavaScript",
 				private: false,
 				html_url: "https://github.com/Geoff1805/Interdevappscript",
@@ -602,7 +614,8 @@ class TourDeControleApp {
 			},
 			{
 				name: "GitCMSstudio",
-				description: "Studio CMS Markdown autonome pour la gestion de contenu web et documentation.",
+				description:
+					"Studio CMS Markdown autonome pour la gestion de contenu web et documentation.",
 				language: "JavaScript",
 				private: false,
 				html_url: "https://github.com/Geoff1805/GitCMSstudio",
@@ -636,9 +649,7 @@ class TourDeControleApp {
 	}
 
 	renderDocsFallback() {
-		this.docsList = [
-			{ path: "rules/global.md", label: "📜 Règles globales" },
-		];
+		this.docsList = [{ path: "rules/global.md", label: "📜 Règles globales" }];
 		const nav = document.getElementById("docs-nav-list");
 		if (nav) {
 			nav.innerHTML = this.docsList
@@ -1152,7 +1163,7 @@ class TourDeControleApp {
 
 		if (!this.claspScripts.length) {
 			grid.innerHTML =
-				"<p class=\"help-text\" style=\"padding: 24px; text-align: center;\">🔒 Configurez vos crédentiels GitHub (PAT) pour charger vos scripts Apps Script privés.</p>";
+				'<p class="help-text" style="padding: 24px; text-align: center;">🔒 Configurez vos crédentiels GitHub (PAT) pour charger vos scripts Apps Script privés.</p>';
 			return;
 		}
 
@@ -1429,12 +1440,17 @@ ${desc || title}
 				const json = JSON.parse(e.target?.result);
 				const remember =
 					document.getElementById("input-remember-tokens")?.checked ?? true;
-				localStorage.setItem("tdc_remember_tokens", remember ? "true" : "false");
+				localStorage.setItem(
+					"tdc_remember_tokens",
+					remember ? "true" : "false",
+				);
 
 				if (json.github_token) this.gh.setToken(json.github_token, remember);
-				if (json.mistral_api_key) this.ai.setMistralKey(json.mistral_api_key, remember);
+				if (json.mistral_api_key)
+					this.ai.setMistralKey(json.mistral_api_key, remember);
 				if (json.groq_api_key) this.ai.setGroqKey(json.groq_api_key, remember);
-				if (json.gemini_api_key) this.ai.setGeminiKey(json.gemini_api_key, remember);
+				if (json.gemini_api_key)
+					this.ai.setGeminiKey(json.gemini_api_key, remember);
 				if (json.gas_token) this.gas.setManualToken(json.gas_token, remember);
 				if (json.bridge_url)
 					localStorage.setItem("tdc_bridge_url", json.bridge_url);

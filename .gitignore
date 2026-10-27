@@ -5,3 +5,10 @@ node_modules/
 .env
 .env.local
 *.log
+.build.lock
+build-artifacts/
+android/.gradle/
+android/build/
+android/app/build/
+android/app/src/main/assets/www/
+
