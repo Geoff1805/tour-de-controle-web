@@ -86,7 +86,10 @@ export class BridgeManager {
 		}
 
 		const url = this.getBridgeUrl();
-		const sseUrl = `${url}/stream/events`;
+		const token = this.getBridgeToken();
+		const sseUrl = token
+			? `${url}/stream/events?token=${encodeURIComponent(token)}`
+			: `${url}/stream/events`;
 
 		try {
 			this.eventSource = new EventSource(sseUrl);

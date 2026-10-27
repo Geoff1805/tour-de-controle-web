@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import AsyncIterator
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -86,17 +86,34 @@ class LaunchMission(BaseModel):
 # Sécurité — Bearer token statique (JWT rotatif en v2)
 # ---------------------------------------------------------------------------
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    """Vérifie le token d'authentification du bridge."""
-    if credentials.credentials != BRIDGE_TOKEN:
+def verify_token(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    token: str | None = Query(None),
+) -> str:
+    """
+    Vérifie le token d'authentification du bridge.
+    Accepte :
+    1. Header HTTP 'Authorization: Bearer <token>'
+    2. Paramètre d'URL '?token=<token>' (requis pour EventSource navigateur SSE)
+    3. Boucle locale (127.0.0.1 / localhost) autorisée sans token en consultation locale
+    """
+    provided = credentials.credentials if credentials else token
+    client_host = request.client.host if request.client else ""
+    is_local = client_host in ("127.0.0.1", "::1", "localhost")
+
+    if not provided and is_local:
+        return BRIDGE_TOKEN
+
+    if not provided or provided != BRIDGE_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalide",
+            detail="Token invalide ou manquant",
         )
-    return credentials.credentials
+    return provided
 
 
 # ---------------------------------------------------------------------------
