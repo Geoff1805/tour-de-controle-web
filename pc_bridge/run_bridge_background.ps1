@@ -1,6 +1,13 @@
-# Antigravity Controller - Script d'execution en arriere-plan
+﻿# Antigravity Controller - Script d'execution en arriere-plan
 # Destine a etre execute par la tache planifiee Windows sans fenetre console
 
+
+
+# Configuration Encodage UTF-8 Standard (Antigravity)
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
 $ErrorActionPreference = "Continue"
 
 $logDir = "$env:USERPROFILE\.gemini\antigravity\logs"

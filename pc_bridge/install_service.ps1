@@ -1,6 +1,13 @@
-# Antigravity Controller - Installation du Service Permanent
+﻿# Antigravity Controller - Installation du Service Permanent
 # Installe le lanceur silencieux dans le dossier de demarrage automatique Windows
 
+
+
+# Configuration Encodage UTF-8 Standard (Antigravity)
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
 $startupDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
 $vbsSource = Join-Path $PSScriptRoot "AntigravityBridge.vbs"
 $vbsTarget = Join-Path $startupDir "AntigravityBridge.vbs"

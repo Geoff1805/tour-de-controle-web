@@ -1,4 +1,4 @@
-# Antigravity Controller - PC Bridge
+﻿# Antigravity Controller - PC Bridge
 # Script de demarrage PowerShell
 
 param(
@@ -6,6 +6,13 @@ param(
     [int]$Port = 8765,
     [string]$BindHost = "0.0.0.0"
 )
+
+# Configuration Encodage UTF-8 Standard (Antigravity)
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+
 
 # 1. Detection de Python
 $pythonBin = "python"

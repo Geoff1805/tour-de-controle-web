@@ -1,5 +1,12 @@
-# Antigravity Controller - Desinstallation du Service Permanent
+﻿# Antigravity Controller - Desinstallation du Service Permanent
 
+
+
+# Configuration Encodage UTF-8 Standard (Antigravity)
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
 $startupDir = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup"
 $vbsTarget = Join-Path $startupDir "AntigravityBridge.vbs"
 

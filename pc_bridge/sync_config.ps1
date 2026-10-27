@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Script de synchronisation automatique de la configuration Antigravity avec GitHub.
 .DESCRIPTION
@@ -13,6 +13,13 @@ param(
     [string]$LocalAgyDir = "$env:USERPROFILE\.gemini\antigravity",
     [string]$RemoteRepo = "https://github.com/Geoff1805/antigravity-config.git"
 )
+
+# Configuration Encodage UTF-8 Standard (Antigravity)
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+$PSDefaultParameterValues['*:Encoding'] = 'utf8'
+
 
 Write-Host "═══════════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host " 🔄 Antigravity 2.0 — Synchronisateur de Configuration" -ForegroundColor Magenta
