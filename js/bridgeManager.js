@@ -23,6 +23,8 @@ export class BridgeManager {
 
 		// Surveillance périodique de la file Batch GitHub (toutes les 45s)
 		this.checkBatchStatus();
+		this.checkVmJobsStatus();
+		setInterval(() => this.checkVmJobsStatus(), 30000);
 		setInterval(() => this.checkBatchStatus(), 45000);
 	}
 
@@ -183,4 +185,41 @@ export class BridgeManager {
 			.replace(/</g, "&lt;")
 			.replace(/>/g, "&gt;");
 	}
+
+	async checkVmJobsStatus() {
+		try {
+			const res = await fetch("https://workspacesearch-api.g-6e8.workers.dev/api/jobs/stats");
+			if (!res.ok) return;
+			const data = await res.json();
+			this.updateVmJobsUI(data);
+		} catch (err) {
+			console.warn("Erreur actualisation métriques VM jobs:", err);
+		}
+	}
+
+	updateVmJobsUI(data) {
+		const badge = document.getElementById("vm-jobs-status-badge");
+		const percentText = document.getElementById("vm-jobs-percent-text");
+		const bar = document.getElementById("vm-jobs-progress-bar");
+		const doneEl = document.getElementById("vm-jobs-done-count");
+		const ignoredEl = document.getElementById("vm-jobs-ignored-count");
+		const pendingEl = document.getElementById("vm-jobs-pending-count");
+		const totalEl = document.getElementById("vm-jobs-total-count");
+
+		if (!badge || !data?.stats) return;
+
+		const pct = data.progress_percent || 0;
+		const isVmActive = data.vm_status === "active";
+
+		badge.textContent = isVmActive ? `VM Active (${pct}%)` : "VM Hors ligne";
+		badge.className = isVmActive ? "badge badge-ok" : "badge badge-private";
+
+		if (percentText) percentText.textContent = `${pct}%`;
+		if (bar) bar.style.width = `${pct}%`;
+		if (doneEl) doneEl.textContent = data.stats.done ?? "--";
+		if (ignoredEl) ignoredEl.textContent = data.stats.ignored ?? "--";
+		if (pendingEl) pendingEl.textContent = data.stats.pending ?? "--";
+		if (totalEl) totalEl.textContent = data.stats.total ?? "--";
+	}
+
 }
