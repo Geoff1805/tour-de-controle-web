@@ -22,11 +22,21 @@ export class BridgeManager {
 			"bridge-approvals-list",
 		);
 
-		// Surveillance périodique de la file Batch GitHub (toutes les 45s)
+		// Surveillance périodique de la file Batch GitHub et VM
 		this.checkBatchStatus();
 		this.checkVmJobsStatus();
+		this.fetchLiveNotifications();
 		setInterval(() => this.checkVmJobsStatus(), 30000);
 		setInterval(() => this.checkBatchStatus(), 45000);
+		setInterval(() => this.fetchLiveNotifications(), 20000);
+
+		const btnRefreshVm = document.getElementById("btn-refresh-vm-status");
+		if (btnRefreshVm) {
+			btnRefreshVm.addEventListener("click", () => {
+				this.checkVmJobsStatus();
+				this.fetchLiveNotifications();
+			});
+		}
 	}
 
 	async checkBatchStatus() {
@@ -212,7 +222,15 @@ export class BridgeManager {
 
 	async checkVmJobsStatus() {
 		try {
-			const res = await fetch("https://workspacesearch-api.g-6e8.workers.dev/api/jobs/stats");
+			const token = "OkgjNYuMGwaMrRL-9Hk3D01v3iRy79-dw6TR8xB5lMM";
+			const res = await fetch(
+				"https://workspacesearch-api.g-6e8.workers.dev/api/jobs/stats",
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
 			if (!res.ok) return;
 			const data = await res.json();
 			this.updateVmJobsUI(data);
@@ -246,4 +264,66 @@ export class BridgeManager {
 		if (totalEl) totalEl.textContent = data.stats.total ?? "--";
 	}
 
+	async fetchLiveNotifications() {
+		const container = document.getElementById("vm-live-notifications-list");
+		if (!container) return;
+
+		try {
+			const res = await fetch(
+				"https://ntfy.sh/geoff_oracle_console_ia_9823/json?poll=1&since=24h",
+			);
+			if (!res.ok) return;
+			const text = await res.text();
+			const lines = text.trim().split("\n");
+			const messages = [];
+
+			for (const line of lines) {
+				if (!line) continue;
+				try {
+					const item = JSON.parse(line);
+					if (item.event === "message") {
+						messages.push(item);
+					}
+				} catch (_) {}
+			}
+
+			if (messages.length === 0) {
+				container.innerHTML = `<div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding: 6px 0;">Aucune alerte récente sur le canal (tout est nominal).</div>`;
+				return;
+			}
+
+			// Trier du plus récent au plus ancien (max 8)
+			messages.reverse();
+			const recent = messages.slice(0, 8);
+
+			container.innerHTML = recent
+				.map((m) => {
+					const timeStr = m.time
+						? new Date(m.time * 1000).toLocaleTimeString([], {
+								hour: "2-digit",
+								minute: "2-digit",
+							})
+						: "";
+					const title = m.title || "Notification";
+					const msg = (m.message || "").replace(/\n/g, " • ").substring(0, 140);
+					const isError = /erreur|warning|echec|alerte/i.test(
+						`${title} ${msg}`,
+					);
+					const borderCol = isError ? "#ef4444" : "#f59e0b";
+
+					return `
+					<div style="background: rgba(0, 0, 0, 0.35); border-left: 3px solid ${borderCol}; padding: 6px 10px; border-radius: 4px; font-size: 0.8rem;">
+						<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+							<strong style="color: #fff; font-size: 0.82rem;">${this.escapeHTML(title)}</strong>
+							<span style="font-size: 0.72rem; color: var(--text-muted);">${timeStr}</span>
+						</div>
+						<div style="color: var(--text-secondary); font-size: 0.78rem; line-height: 1.3;">${this.escapeHTML(msg)}</div>
+					</div>
+				`;
+				})
+				.join("");
+		} catch (err) {
+			console.warn("Erreur lecture flux ntfy:", err);
+		}
+	}
 }

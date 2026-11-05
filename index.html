@@ -380,15 +380,18 @@
 
               <!-- Section Suivi VM IA 24/7 & Triage WorkspaceOrganizer -->
         <div class="panel-card" style="margin-bottom: 24px; background: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9)); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 18px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
             <h2 style="font-size: 1.05rem; color: #f59e0b; margin: 0; display: flex; align-items: center; gap: 8px;">
-              <span>⚡ Nœud de Calcul 24/7 (ia.alsteens.net)</span>
+              <span>⚡ Nœud de Calcul 24/7 (ia.alsteens.net) &amp; WorkspaceOrganizer</span>
             </h2>
-            <span class="badge badge-ok" id="vm-jobs-status-badge">VM Active</span>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span class="badge badge-ok" id="vm-jobs-status-badge">VM Active</span>
+              <button type="button" id="btn-refresh-vm-status" class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.75rem;">🔄 Actualiser</button>
+            </div>
           </div>
           <div id="vm-jobs-metrics" style="display: flex; flex-direction: column; gap: 8px;">
             <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted);">
-              <span>Avancement Triage & Classification</span>
+              <span>Avancement Triage &amp; Classification IA</span>
               <span id="vm-jobs-percent-text" style="font-weight: bold; color: #f59e0b;">-- %</span>
             </div>
             <div style="width: 100%; height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
@@ -410,6 +413,20 @@
               <div style="background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 6px;">
                 <span style="color: var(--text-muted); display: block;">Total ciblés</span>
                 <span id="vm-jobs-total-count" style="font-weight: bold; color: #38bdf8;">--</span>
+              </div>
+            </div>
+
+            <!-- Flux des Notifications & Suivi des Demandes en Temps Réel -->
+            <div style="margin-top: 14px; border-top: 1px dashed rgba(245, 158, 11, 0.25); padding-top: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.85rem; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 6px;">
+                  <span>🔔 Journal des Demandes &amp; Alertes Immédiates</span>
+                  <span class="badge badge-public" style="font-size: 0.7rem; padding: 1px 6px;">Live Cloud</span>
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">Topic: geoff_oracle_console_ia</span>
+              </div>
+              <div id="vm-live-notifications-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+                <div style="font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding: 6px 0;">Chargement des alertes et du journal...</div>
               </div>
             </div>
           </div>
