@@ -1059,6 +1059,7 @@ class TourDeControleApp {
     `,
 			)
 			.join("");
+		this.chat?.refreshTargetOptions();
 	}
 
 	async selectDoc(docPath) {

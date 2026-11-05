@@ -3,7 +3,7 @@
  * Cache-first pour les assets statiques, Network-first pour les requêtes API (GitHub, Bridge, Gemini)
  */
 
-const CACHE_NAME = "tdc-v2.9.0";
+const CACHE_NAME = "tdc-v3.0.0-chat-vm";
 const STATIC_ASSETS = [
 	"./",
 	"./index.html",

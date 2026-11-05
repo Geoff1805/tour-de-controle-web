@@ -1,6 +1,6 @@
 /**
  * Gestionnaire du Chat IA pour la Tour de Contrôle Antigravity
- * Multi-fournisseurs : Google Gemini Flash, Mistral Codestral, Groq Cloud, PC Bridge
+ * Chat unique vers la VM IA Antigravity, global ou lié à un projet
  * Rendu Markdown avec coloration et copie de code
  * 100% Client-Side — Persistance localStorage
  */
@@ -11,23 +11,17 @@ export class ChatManager {
 	constructor(aiClient, appRef) {
 		this.ai = aiClient;
 		this.app = appRef;
-		this.storageKey = "tdc_chat_history_v1";
+		this.storageKey = "tdc_chat_history_v2";
 		this.messages = [];
 		this.isLoading = false;
-
-		this.provider = localStorage.getItem("tdc_chat_provider") || "gemini";
-		this.model = localStorage.getItem("tdc_chat_model") || "gemini-2.5-flash";
-		this.injectContext =
-			localStorage.getItem("tdc_chat_inject_context") !== "false";
+		this.target = localStorage.getItem("tdc_chat_target") || "__global__";
 
 		this.dom = {
 			container: null,
 			messagesList: null,
 			form: null,
 			input: null,
-			providerSelect: null,
-			modelSelect: null,
-			contextCheckbox: null,
+			targetSelect: null,
 			clearBtn: null,
 			chipsContainer: null,
 		};
@@ -38,43 +32,16 @@ export class ChatManager {
 		this.dom.messagesList = document.getElementById("chat-messages-list");
 		this.dom.form = document.getElementById("chat-form");
 		this.dom.input = document.getElementById("chat-input");
-		this.dom.providerSelect = document.getElementById("chat-provider-select");
-		this.dom.modelSelect = document.getElementById("chat-model-select");
-		this.dom.contextCheckbox = document.getElementById("chat-inject-context");
+		this.dom.targetSelect = document.getElementById("chat-target-select");
 		this.dom.clearBtn = document.getElementById("btn-chat-clear");
 		this.dom.chipsContainer = document.getElementById("chat-quick-chips");
 
 		if (!this.dom.messagesList || !this.dom.form) return;
 
-		// Initialisation des sélecteurs
-		if (this.dom.providerSelect) {
-			this.dom.providerSelect.value = this.provider;
-			this.updateModelOptions();
-			this.dom.providerSelect.addEventListener("change", (e) => {
-				this.provider = e.target.value;
-				localStorage.setItem("tdc_chat_provider", this.provider);
-				this.updateModelOptions();
-			});
-		}
-
-		if (this.dom.modelSelect) {
-			this.dom.modelSelect.value = this.model;
-			this.dom.modelSelect.addEventListener("change", (e) => {
-				this.model = e.target.value;
-				localStorage.setItem("tdc_chat_model", this.model);
-			});
-		}
-
-		if (this.dom.contextCheckbox) {
-			this.dom.contextCheckbox.checked = this.injectContext;
-			this.dom.contextCheckbox.addEventListener("change", (e) => {
-				this.injectContext = e.target.checked;
-				localStorage.setItem(
-					"tdc_chat_inject_context",
-					String(this.injectContext),
-				);
-			});
-		}
+		this.refreshTargetOptions();
+		this.dom.targetSelect?.addEventListener("change", (e) => {
+			this.switchTarget(e.target.value);
+		});
 
 		// Envoi de message (Formulaire & Enter)
 		this.dom.form.addEventListener("submit", (e) => {
@@ -125,49 +92,37 @@ export class ChatManager {
 		this.loadHistory();
 	}
 
-	updateModelOptions() {
-		if (!this.dom.modelSelect) return;
-		this.dom.modelSelect.innerHTML = "";
-
-		const modelsByProvider = {
-			gemini: [
-				{
-					val: "gemini-2.5-flash",
-					label: "Gemini 2.5 Flash (Rapide & Gratuit)",
-				},
-				{ val: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Raisonnement Élite)" },
-			],
-			groq: [
-				{ val: "qwen/qwen3.8-27b", label: "Qwen 3.8 27B (Groq ~500 t/s)" },
-				{ val: "llama-3.3-70b-versatile", label: "Llama 3.3 70B (Groq)" },
-			],
-			mistral: [
-				{ val: "codestral-latest", label: "Codestral Latest (Mistral Élite)" },
-				{ val: "mistral-large-latest", label: "Mistral Large (Général)" },
-			],
-			bridge: [
-				{
-					val: "antigravity-local",
-					label: "Agent Antigravity PC (FastAPI Local)",
-				},
-			],
-		};
-
-		const list = modelsByProvider[this.provider] || modelsByProvider.gemini;
-		list.forEach((m) => {
-			const opt = document.createElement("option");
-			opt.value = m.val;
-			opt.textContent = m.label;
-			this.dom.modelSelect.appendChild(opt);
+	refreshTargetOptions() {
+		if (!this.dom.targetSelect) return;
+		const projects = this.app?.repos || [];
+		this.dom.targetSelect.innerHTML =
+			'<option value="__global__">🌐 Tous les projets / nouveau projet</option>';
+		projects.forEach((project) => {
+			const option = document.createElement("option");
+			option.value = project.name;
+			option.textContent = `📦 ${project.name}`;
+			this.dom.targetSelect.appendChild(option);
 		});
+		this.target = projects.some((project) => project.name === this.target)
+			? this.target
+			: "__global__";
+		this.dom.targetSelect.value = this.target;
+	}
 
-		this.model = list[0].val;
-		localStorage.setItem("tdc_chat_model", this.model);
+	switchTarget(target) {
+		this.saveHistory();
+		this.target = target || "__global__";
+		localStorage.setItem("tdc_chat_target", this.target);
+		this.loadHistory();
+	}
+
+	getStorageKey() {
+		return `${this.storageKey}:${this.target}`;
 	}
 
 	loadHistory() {
 		try {
-			const saved = localStorage.getItem(this.storageKey);
+			const saved = localStorage.getItem(this.getStorageKey());
 			this.messages = saved ? JSON.parse(saved) : [];
 		} catch (_e) {
 			this.messages = [];
@@ -195,7 +150,7 @@ export class ChatManager {
 
 	saveHistory() {
 		try {
-			localStorage.setItem(this.storageKey, JSON.stringify(this.messages));
+			localStorage.setItem(this.getStorageKey(), JSON.stringify(this.messages));
 		} catch (e) {
 			console.warn("Impossible de sauvegarder l'historique du chat:", e);
 		}
@@ -203,7 +158,7 @@ export class ChatManager {
 
 	clearHistory() {
 		this.messages = [];
-		localStorage.removeItem(this.storageKey);
+		localStorage.removeItem(this.getStorageKey());
 		this.loadHistory();
 	}
 
@@ -223,7 +178,7 @@ export class ChatManager {
 
 		const avatar = document.createElement("div");
 		avatar.className = "chat-avatar";
-		avatar.innerHTML = isUser ? "👤" : this.provider === "bridge" ? "🖥️" : "🤖";
+		avatar.innerHTML = isUser ? "👤" : "🖥️";
 
 		const bubble = document.createElement("div");
 		bubble.className = "chat-bubble";
@@ -289,15 +244,14 @@ export class ChatManager {
 
 		try {
 			// Construction du contexte des projets si coché
-			let systemInstruction = "";
-			if (this.injectContext && this.app) {
-				systemInstruction = this.buildContextSystemPrompt();
-			}
+			const systemInstruction = this.buildContextSystemPrompt();
 
 			// Appel de l'IA
 			const reply = await this.ai.chat(this.messages, {
-				provider: this.provider,
-				model: this.model,
+				provider: "bridge",
+				model: "antigravity-local",
+				target: this.target,
+				bridgeToken: this.app?.agentsHub?.getBridgeToken?.(),
 				system: systemInstruction,
 			});
 
@@ -316,7 +270,7 @@ export class ChatManager {
 			this.removeTypingIndicator();
 			const errMsg = {
 				role: "assistant",
-				content: `⚠️ **Erreur lors de l'appel IA (${this.provider})** :\n\n> ${err.message}\n\n*Vérifiez vos clés dans le bouton ⚙️ Crédentiels en haut à droite.*`,
+				content: `⚠️ **Erreur lors de l'envoi à la VM IA** :\n\n> ${err.message}\n\n*Vérifiez l'URL et le token du Bridge dans Crédentiels.*`,
 				timestamp: Date.now(),
 			};
 			this.messages.push(errMsg);

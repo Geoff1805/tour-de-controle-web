@@ -26,7 +26,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("agy-bridge")
@@ -35,7 +35,7 @@ logger = logging.getLogger("agy-bridge")
 # Configuration
 # ---------------------------------------------------------------------------
 
-BRIDGE_TOKEN = os.environ.get("AGY_BRIDGE_TOKEN", "change-me-in-prod")
+BRIDGE_TOKEN = os.environ.get("AGY_BRIDGE_TOKEN", "").strip()
 AGY_SOCKET_PATH = os.environ.get("AGY_SOCKET_PATH", r"C:\Users\geoff\.gemini\antigravity")
 CONFIG_REPO_PATH = os.environ.get("AGY_CONFIG_REPO_PATH", os.path.expanduser(r"~/.gemini/antigravity_config_repo"))
 
@@ -78,6 +78,9 @@ class LaunchMission(BaseModel):
     """Paramètres pour lancer une nouvelle mission agent."""
     prompt: str
     model: str = "gemini-2.5-pro"
+    scope: str = "global"
+    project: str | None = None
+    conversation: list[dict] = Field(default_factory=list)
     max_tokens: int = 100_000
     require_approval: bool = True
 
@@ -104,6 +107,14 @@ def verify_token(
     provided = credentials.credentials if credentials else token
     client_host = request.client.host if request.client else ""
     is_local = client_host in ("127.0.0.1", "::1", "localhost")
+
+    if not BRIDGE_TOKEN:
+        if is_local:
+            return "local"
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AGY_BRIDGE_TOKEN n'est pas configure sur le PC",
+        )
 
     if not provided and is_local:
         return BRIDGE_TOKEN
@@ -275,11 +286,20 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS restreint à l'app Flutter (via Tailscale, l'IP sera celle du réseau VPN)
+allowed_origins = [
+    origin.strip()
+    for origin in os.environ.get(
+        "AGY_CORS_ORIGINS",
+        "http://localhost:8765,http://127.0.0.1:8765",
+    ).split(",")
+    if origin.strip()
+]
+
+# Les clients natifs n'ont pas besoin de CORS; la PWA doit déclarer son origine.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["Authorization", "Content-Type"],
 )
@@ -430,20 +450,44 @@ async def launch_mission(
     _token: str = Depends(verify_token),
 ) -> dict:
     """
-    Lance une nouvelle mission agent depuis le mobile.
-    TODO v2 : appeler l'API CLI d'Antigravity directement.
+    Reçoit une instruction de chat et la dépose dans la file IPC de la VM.
     """
-    logger.info(f"🚀 Mission lancée: model={mission.model} prompt={mission.prompt[:50]}...")
+    if mission.scope not in {"global", "project"}:
+        raise HTTPException(status_code=422, detail="scope doit être global ou project")
+    if mission.scope == "project" and not mission.project:
+        raise HTTPException(status_code=422, detail="project est requis pour une mission projet")
+
+    mission_dir = Path(AGY_SOCKET_PATH) / "missions"
+    mission_dir.mkdir(parents=True, exist_ok=True)
+    mission_id = f"mission-{int(time.time() * 1000)}"
+    mission_payload = {
+        "id": mission_id,
+        "type": "chat_instruction",
+        "scope": mission.scope,
+        "project": mission.project,
+        "prompt": mission.prompt,
+        "conversation": mission.conversation[-20:],
+        "model": mission.model,
+        "max_tokens": mission.max_tokens,
+        "require_approval": mission.require_approval,
+        "created_at": time.time(),
+        "status": "queued",
+    }
+    mission_file = mission_dir / f"{mission_id}.json"
+    mission_file.write_text(json.dumps(mission_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.info(f"🚀 Mission déposée: id={mission_id} scope={mission.scope} project={mission.project}")
 
     await _broadcast({
         "type": "mission_launched",
+        "mission_id": mission_id,
+        "scope": mission.scope,
+        "project": mission.project,
         "prompt": mission.prompt,
         "model": mission.model,
         "timestamp": time.time(),
     })
 
-    # TODO v2 : subprocess appel agy CLI
-    return {"status": "queued", "message": "Mission transmise à Antigravity"}
+    return {"status": "queued", "mission_id": mission_id, "message": "Instruction déposée dans la file Antigravity"}
 
 
 @app.post("/events/push")

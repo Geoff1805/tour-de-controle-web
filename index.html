@@ -33,7 +33,7 @@
       <button type="button" class="nav-tab" data-tab="docs" role="tab" aria-selected="false" style="display: none;">
         📜 Règles & Docs
       </button>
-      <button type="button" class="nav-tab" data-tab="ai" role="tab" aria-selected="false">
+      <button type="button" class="nav-tab" data-tab="ai" role="tab" aria-selected="false" style="display: none;">
         🤖 Missions & IA
       </button>
       <button type="button" class="nav-tab" data-tab="chat" role="tab" aria-selected="false">
@@ -336,23 +336,8 @@
           </div>
           <div class="chat-header-controls">
             <div class="control-group">
-              <label for="chat-provider-select">Moteur IA :</label>
-              <select id="chat-provider-select" class="form-select chat-select">
-                <option value="gemini">Google Gemini Flash (Gratuit)</option>
-                <option value="groq">Groq Cloud Qwen (500 t/s)</option>
-                <option value="mistral">Mistral Codestral (Élite)</option>
-                <option value="bridge">Antigravity PC Bridge (Local)</option>
-              </select>
-            </div>
-            <div class="control-group">
-              <label for="chat-model-select">Modèle :</label>
-              <select id="chat-model-select" class="form-select chat-select"></select>
-            </div>
-            <div class="control-group-check">
-              <label>
-                <input type="checkbox" id="chat-inject-context" checked>
-                <span>Contexte Dépôts</span>
-              </label>
+              <label for="chat-target-select">Espace de travail :</label>
+              <select id="chat-target-select" class="form-select chat-select"></select>
             </div>
             <button type="button" id="btn-chat-clear" class="btn btn-secondary btn-sm" title="Effacer l'historique">
               🗑️ Effacer
@@ -364,11 +349,9 @@
 
         <div class="chat-footer">
           <div id="chat-quick-chips" class="chat-quick-chips">
-            <button type="button" class="chat-chip" data-prompt="📊 Synthèse complète : Quel est le statut global de mes dépôts et des workflows CI/CD ?">📊 Statut Dépôts</button>
-            <button type="button" class="chat-chip" data-prompt="🛡️ Audit de sécurité : Y a-t-il des alertes Dependabot ou des vulnérabilités actives ?">🛡️ Sécurité Dependabot</button>
-            <button type="button" class="chat-chip" data-prompt="🔄 Synchronise les configurations partagées avec le PC Bridge">🔄 Sync Configs</button>
-            <button type="button" class="chat-chip" data-prompt="⚡ Vérifie l'état de la passerelle PC Bridge et de la connectivité Tailscale">⚡ Statut PC Bridge</button>
-            <button type="button" class="chat-chip" data-prompt="📦 Vérifie les versions actuelles des applications (InstallAPK, Bullix, Needix)">📦 Versions Apps</button>
+            <button type="button" class="chat-chip" data-prompt="Analyse l'état du projet et propose les prochaines actions.">🔎 Analyser le projet</button>
+            <button type="button" class="chat-chip" data-prompt="Corrige le problème décrit dans ce projet, teste la correction et déploie si les validations passent.">🛠️ Corriger et déployer</button>
+            <button type="button" class="chat-chip" data-prompt="Crée un nouveau projet conforme aux règles de l'écosystème, puis prépare son premier déploiement.">✨ Créer un projet</button>
           </div>
           <form id="chat-form" class="chat-form">
             <textarea id="chat-input" class="chat-input" rows="2" placeholder="Posez une question, demandez une action, analysez un bug... (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"></textarea>

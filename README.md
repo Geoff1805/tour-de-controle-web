@@ -7,11 +7,9 @@
 
 ## 🌟 Fonctionnalités Unifiées
 
-1. **🏛️ Dépôts & CI/CD** : Supervision globale en direct de vos projets (`InstallAPK`, `Bullix`, `Needix`, `Improv-SQE-Consult`, etc.), statuts des workflows GitHub Actions et dispatching.
-2. **💬 Chat IA Conversationnel** :
-   - Assistant de pilotage conversationnel multi-moteurs (Google Gemini Flash, Mistral Codestral, Groq Cloud ~500 tps).
-   - Suggestions de commandes en 1-tap, audit de santé des dépôts, injection de contexte automatique et rendu Markdown riche.
-3. **🤖 Hub Agents IA (Jules & Copilot)** : Orchestration autonome de missions, création d'issues `ai-solve` et dispatching automatique.
+1. **🏛️ Dépôts & CI/CD** : Supervision globale en direct de vos projets (`InstallAPK`, `Bullix`, `Needix`, `Improv-SQE-Consult`, etc.).
+2. **💬 Chat VM IA** : Toute demande de modification ou de création passe par le chat. La cible peut être globale/nouveau projet ou un dépôt existant; la conversation est transmise à la VM Antigravity.
+3. **📡 File VM** : Le Bridge écrit chaque instruction dans `AGY_SOCKET_PATH/missions` et la diffuse en SSE pour que le runner Antigravity l’exécute, teste et déploie selon les règles du projet.
 4. **✅ Approbations & Human-in-the-Loop** :
    - **📥 File d'Attente Batch (Agents Antigravity)** : Programmation de missions en différé, exécutées automatiquement par le PC Windows au démarrage de session dès la connexion Wi-Fi.
    - **🐙 Pull Requests GitHub** : Review et fusion sécurisée des PRs sans commit direct.

@@ -119,7 +119,7 @@ Règles de développement Apps Script strictes :
 	 * @param {Object} options
 	 */
 	async chat(messages, options = {}) {
-		const provider = options.provider || "gemini";
+		const provider = options.provider || "bridge";
 		const model =
 			options.model ||
 			(provider === "mistral"
@@ -145,10 +145,11 @@ Règles de développement Apps Script strictes :
 
 	getChatSystemInstruction() {
 		return `Tu es l'Assistant IA de la Tour de Contrôle Antigravity (Écosystème Geoff1805).
-Tu pilotes et supervises les projets logiciels (Bullix, Needix, InstallAPK, Improv-SQE-Consult, tour-de-controle).
+Tu reçois exclusivement des instructions de développement via le chat et tu les exécutes sur la VM IA.
+Tu peux modifier un projet existant ou créer un nouveau projet, puis lancer les tests et le déploiement prévus par ses règles.
 Tu réponds en français de manière claire, concise, structurée et technique.
 Tu peux formater tes réponses en Markdown riche (tableaux, listes, blocs de code avec langage spécifié).
-Si l'utilisateur demande d'effectuer une action (créer une issue, déclencher un build, synchroniser), propose-lui la commande ou la démarche exacte.`;
+Avant toute modification, confirme la cible et les critères d'acceptation; rapporte ensuite les fichiers touchés, les tests et le résultat du déploiement.`;
 	}
 
 	async chatMistral(messages, model = "codestral-latest", system = "") {
@@ -262,7 +263,13 @@ Si l'utilisateur demande d'effectuer une action (créer une issue, déclencher u
 			method: "POST",
 			headers,
 			body: JSON.stringify({
-				prompt: `[Chat Tour de Contrôle] ${lastMessage}`,
+				prompt: lastMessage,
+				scope: options.target === "__global__" ? "global" : "project",
+				project: options.target === "__global__" ? null : options.target,
+				conversation: messages.slice(-20).map((message) => ({
+					role: message.role,
+					content: message.content,
+				})),
 				model: model || "antigravity-local",
 			}),
 		});
@@ -275,7 +282,7 @@ Si l'utilisateur demande d'effectuer une action (créer une issue, déclencher u
 		}
 
 		const data = await res.json();
-		return `📡 **Mission transmise au PC Bridge Antigravity** :\n- **Statut** : ${data.status || "OK"}\n- **Message** : ${data.message || "En cours de traitement"}\n- **Détails** : L'agent local traite votre consigne sur la machine hôte.`;
+		return `📡 **Instruction envoyée à la VM IA** :\n- **Mission** : \`${data.mission_id || "créée"}\`\n- **Statut** : ${data.status || "OK"}\n- **Message** : ${data.message || "En attente de traitement"}`;
 	}
 
 	// --- 1. Mistral AI (Codestral) ---
