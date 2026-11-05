@@ -241,48 +241,44 @@ Avant toute modification, confirme la cible et les critères d'acceptation; rapp
 		return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 	}
 
-	async chatBridge(
-		messages,
-		model = "antigravity-local",
-		_system = "",
-		options = {},
-	) {
-		const bridgeUrl =
-			options.bridgeUrl ||
+	async chatBridge(messages, _model = "", _system = "", options = {}) {
+		const vmUrl =
+			options.vmUrl ||
+			localStorage.getItem("tdc_vm_url") ||
 			localStorage.getItem("tdc_bridge_url") ||
-			"http://localhost:8765";
-		const bridgeToken =
-			options.bridgeToken || localStorage.getItem("tdc_bridge_token") || "";
-
-		const lastMessage = messages[messages.length - 1]?.content || "";
-		const headers = { "Content-Type": "application/json" };
-		if (bridgeToken) headers.Authorization = `Bearer ${bridgeToken}`;
-
-		// Envoi de la mission / question au bridge
-		const res = await fetch(`${bridgeUrl}/missions/launch`, {
+			"https://ia.alsteens.net";
+		const target = options.target || "__global__";
+		const res = await fetch(`${vmUrl.replace(/\/$/, "")}/api/chat`, {
 			method: "POST",
-			headers,
+			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
-				prompt: lastMessage,
-				scope: options.target === "__global__" ? "global" : "project",
-				project: options.target === "__global__" ? null : options.target,
-				conversation: messages.slice(-20).map((message) => ({
+				model: options.model || "",
+				messages: messages.slice(-20).map((message) => ({
 					role: message.role,
 					content: message.content,
 				})),
-				model: model || "antigravity-local",
+				project_context:
+					target === "__global__"
+						? null
+						: {
+								project: target,
+								include_cache: true,
+								include_tree: true,
+								include_git: true,
+								include_readme: false,
+							},
 			}),
 		});
 
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
 			throw new Error(
-				err.detail || err.message || `Erreur PC Bridge HTTP ${res.status}`,
+				err.detail || err.message || `Erreur VM Linux HTTP ${res.status}`,
 			);
 		}
 
 		const data = await res.json();
-		return `📡 **Instruction envoyée à la VM IA** :\n- **Mission** : \`${data.mission_id || "créée"}\`\n- **Statut** : ${data.status || "OK"}\n- **Message** : ${data.message || "En attente de traitement"}`;
+		return data.content || "Aucune réponse reçue de la VM Linux.";
 	}
 
 	// --- 1. Mistral AI (Codestral) ---

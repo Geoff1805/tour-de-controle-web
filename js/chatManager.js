@@ -249,9 +249,8 @@ export class ChatManager {
 			// Appel de l'IA
 			const reply = await this.ai.chat(this.messages, {
 				provider: "bridge",
-				model: "antigravity-local",
+				model: "",
 				target: this.target,
-				bridgeToken: this.app?.agentsHub?.getBridgeToken?.(),
 				system: systemInstruction,
 			});
 
