@@ -26,8 +26,8 @@ if (Test-Path $knownPython) {
 
 # 2. Token de securite
 if (-not $Token) {
-    $Token = "antigravity-secure-key-2026"
-    Write-Host "[INFO] Variable AGY_BRIDGE_TOKEN non definie : token par defaut = '$Token'" -ForegroundColor Yellow
+    Write-Error "AGY_BRIDGE_TOKEN est obligatoire. Definis-le dans l'environnement Windows avant de demarrer le bridge."
+    exit 1
 }
 $env:AGY_BRIDGE_TOKEN = $Token
 
@@ -37,7 +37,7 @@ Write-Host "--------------------------------------------------------" -Foregroun
 Write-Host "   Adresse : http://${BindHost}:${Port}" -ForegroundColor Green
 Write-Host "   Health  : http://localhost:${Port}/health" -ForegroundColor Green
 Write-Host "   SSE     : http://localhost:${Port}/stream/events" -ForegroundColor Green
-Write-Host "   Token   : $Token" -ForegroundColor Yellow
+Write-Host "   Token   : configure (non affiche)" -ForegroundColor Yellow
 Write-Host "   Reseau  : Securise via Tailscale VPN" -ForegroundColor Cyan
 Write-Host "--------------------------------------------------------" -ForegroundColor Cyan
 Write-Host ""

@@ -11,7 +11,7 @@ param(
     [string]$Action = "sync", # "pull", "push", "sync", "watch"
     [string]$ConfigRepoDir = "$env:USERPROFILE\.gemini\antigravity_config_repo",
     [string]$LocalAgyDir = "$env:USERPROFILE\.gemini\antigravity",
-    [string]$RemoteRepo = "https://github.com/Geoff1805/antigravity-config.git"
+    [string]$RemoteRepo = "https://github.com/Geoff1805/tour-de-controle.git"
 )
 
 # Configuration Encodage UTF-8 Standard (Antigravity)
