@@ -9,6 +9,7 @@ export class BridgeManager {
 		this.app = appRef;
 		this.pendingBatchMissions = [];
 		this.pendingApprovals = [];
+		this.batchLastCheckedAt = null;
 		this.dom = {
 			badge: null,
 			approvalsContainer: null,
@@ -37,16 +38,20 @@ export class BridgeManager {
 		try {
 			const items =
 				(await this.app.gh.request(
-					"/user/issues?filter=all&labels=batch-mission&state=open&per_page=50",
+					"/user/issues?filter=all&labels=batch-mission&state=all&per_page=50",
 				)) || [];
 			this.pendingBatchMissions = Array.isArray(items) ? items : [];
+			this.batchLastCheckedAt = new Date();
+			const openCount = this.pendingBatchMissions.filter(
+				(item) => item.state === "open",
+			).length;
 
-			if (items.length === 0) {
+			if (openCount === 0) {
 				this.updateBadge(true, "Batch : 0 en attente", "badge-ok");
 			} else {
 				this.updateBadge(
 					true,
-					`Batch : ${items.length} en attente`,
+					`Batch : ${openCount} en attente`,
 					"badge-warning",
 				);
 			}
@@ -107,14 +112,15 @@ export class BridgeManager {
 			this.pendingBatchMissions.length === 0 &&
 			this.pendingApprovals.length === 0
 		) {
-			this.dom.approvalsContainer.innerHTML = `
-				<div class="empty-state" style="padding: 16px; text-align: center; color: var(--text-muted); background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 8px;">
-					✨ Aucune mission batch en attente d'exécution. Le PC dépile automatiquement au démarrage de session.
-				</div>
-			`;
+			this.dom.approvalsContainer.innerHTML = this.renderBatchSummary(
+				"Aucune mission batch connue. Le PC interroge GitHub au démarrage et selon le cron.",
+			);
 			return;
 		}
 
+		const openCount = this.pendingBatchMissions.filter(
+			(item) => item.state === "open",
+		).length;
 		const batchHtml = this.pendingBatchMissions
 			.map((item) => {
 				const repoName = item.repository_url
@@ -127,36 +133,44 @@ export class BridgeManager {
 					.replace(/###.*/g, "")
 					.trim()
 					.substring(0, 180);
+				const isOpen = item.state === "open";
+				const statusLabel = isOpen ? "📥 En attente du PC" : "✅ Clôturée";
+				const statusClass = isOpen ? "badge-warning" : "badge-ok";
+				const updatedDate = item.updated_at
+					? new Date(item.updated_at).toLocaleString("fr-FR")
+					: dateStr;
 
 				return `
 				<div class="card" style="border-left: 4px solid #38bdf8; margin-bottom: 12px; background: #0b1220;">
 					<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
 						<div>
-							<span class="badge badge-warning" style="margin-right: 8px;">📥 En attente Batch PC</span>
+							<span class="badge ${statusClass}" style="margin-right: 8px;">${statusLabel}</span>
 							<strong style="font-size: 1rem; color: #fff;">#${item.number} ${this.escapeHTML(item.title)}</strong>
 							<span style="font-size: 0.8rem; color: var(--text-muted); margin-left: 8px;">${dateStr}</span>
 						</div>
 						<span style="font-family: var(--font-mono); font-size: 0.75rem; color: #38bdf8;">${this.escapeHTML(repoName)}</span>
 					</div>
 
-					<p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 10px; white-space: pre-line;">
+					<p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 4px; white-space: pre-line;">
 						${this.escapeHTML(cleanBody || "Mission programmée pour le PC Antigravity.")}
 					</p>
+					<div class="help-text" style="margin-bottom: 10px;">Dernière activité : ${updatedDate}</div>
 
 					<div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
 						<a href="${item.html_url}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" style="text-decoration: none;">
 							🔗 Voir sur GitHub
 						</a>
-						<button type="button" class="btn btn-secondary btn-sm" data-action="cancel-batch" data-repo="${this.escapeHTML(repoName)}" data-issue="${item.number}" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #ef4444;">
-							❌ Annuler la mission
-						</button>
+						${isOpen ? `<button type="button" class="btn btn-secondary btn-sm" data-action="cancel-batch" data-repo="${this.escapeHTML(repoName)}" data-issue="${item.number}" style="background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #ef4444;">❌ Annuler la mission</button>` : ""}
 					</div>
 				</div>
 			`;
 			})
 			.join("");
 
-		this.dom.approvalsContainer.innerHTML = batchHtml;
+		this.dom.approvalsContainer.innerHTML =
+			this.renderBatchSummary(
+				`${openCount} mission(s) en attente · ${this.pendingBatchMissions.length - openCount} clôturée(s)`,
+			) + batchHtml;
 
 		// Écouteurs de clics pour Annuler
 		this.dom.approvalsContainer
@@ -168,6 +182,16 @@ export class BridgeManager {
 					this.cancelBatchMission(repo, issue);
 				});
 			});
+	}
+
+	renderBatchSummary(message) {
+		const checkedAt = this.batchLastCheckedAt
+			? this.batchLastCheckedAt.toLocaleTimeString("fr-FR")
+			: "jamais";
+		return `<div class="panel-card" style="margin-bottom: 12px; padding: 12px 16px; border-left: 4px solid #38bdf8;">
+			<strong>Suivi du messaging batch</strong>
+			<div class="help-text" style="margin-top: 4px;">${this.escapeHTML(message)} · Dernier scan : ${checkedAt}</div>
+		</div>`;
 	}
 
 	updateHeaderCounter() {
