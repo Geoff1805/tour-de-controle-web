@@ -357,6 +357,13 @@ ${task.desc}`;
 				issue.html_url ||
 				`https://github.com/${owner}/${targetRepo}/issues/${issue.number}`;
 			this.app.showToast("Mission enregistrée dans la file Batch !", "success");
+			if (this.app.bridge?.sendPushNotification) {
+				this.app.bridge.sendPushNotification(
+					`📥 Mission Batch Déposée : ${task.title}`,
+					`Issue #${issue.number} sur ${owner}/${targetRepo}\nCible: ${task.isPC ? "PC Antigravity" : targetRepo}`,
+					"inbox_tray,rocket",
+				);
+			}
 			this.renderStatus(
 				`✅ Mission « ${task.title} » enregistrée dans la file Batch (Issue #${issue.number}) !\n` +
 					`Le PC exécutera automatiquement cette mission dès sa connexion au Wi-Fi au démarrage ou via le runner batch.\n` +

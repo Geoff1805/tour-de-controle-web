@@ -1276,6 +1276,13 @@ ${desc || title}
 				`Issue #${res.number} créée avec succès sur ${projName} !`,
 				"success",
 			);
+			if (this.bridge?.sendPushNotification) {
+				this.bridge.sendPushNotification(
+					`🤖 Demande Déclenchée : ${title}`,
+					`Projet: ${projName} (Issue #${res.number})\nPrise en charge par ai-solve.`,
+					"robot,sparkles",
+				);
+			}
 		} catch (err) {
 			this.showToast(`Erreur création Issue : ${err.message}`, "error");
 		}
@@ -1331,6 +1338,13 @@ ${desc || title}
 				"Demande de synchronisation enregistrée dans le Batch PC !",
 				"success",
 			);
+			if (this.bridge?.sendPushNotification) {
+				this.bridge.sendPushNotification(
+					"🔄 Demande Sync Batch Déposée",
+					`Issue #${_res.number} sur tour-de-controle pour synchronisation PC ↔ GitHub.`,
+					"arrows_counterclockwise,gear",
+				);
+			}
 			await this.bridge.checkBatchStatus();
 		} catch (err) {
 			this.showToast(`Erreur : ${err.message}`, "error");

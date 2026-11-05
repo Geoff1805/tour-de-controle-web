@@ -20,6 +20,21 @@ $BATCH_JSON = Join-Path $AGY_DIR "pending_batch.json"
 $BATCH_MD = Join-Path $AGY_DIR "BATCH_MISSIONS.md"
 $SYNC_SCRIPT = Join-Path $PSScriptRoot "..\pc_bridge\sync_config.ps1"
 
+function Send-NtfyNotification {
+    param([string]$Title, [string]$Message, [string]$Tags = "bell", [string]$Priority = "default")
+    try {
+        $headers = @{
+            "Title" = $Title
+            "Priority" = $Priority
+            "Tags" = $Tags
+        }
+        $bodyBytes = [System.Text.Encoding]::UTF8.GetBytes($Message)
+        Invoke-RestMethod -Uri "https://ntfy.sh/geoff_oracle_console_ia_9823" -Method Post -Headers $headers -Body $bodyBytes -TimeoutSec 5 | Out-Null
+    } catch {
+        # Silencieux si reseau bloque
+    }
+}
+
 function Show-Notification {
     param([string]$Title, [string]$Message)
     try {
@@ -34,6 +49,7 @@ function Show-Notification {
     } catch {
         # Notification silencieuse si indisponible
     }
+    Send-NtfyNotification -Title $Title -Message $Message -Tags "inbox_tray,robot"
 }
 
 function Wait-ForNetwork {
@@ -146,6 +162,7 @@ function Process-AutomaticTasks {
                 & powershell.exe -ExecutionPolicy Bypass -File $SYNC_SCRIPT -Force
                 Write-Host "✓ Synchronisation terminée. Clôture de l'Issue #$num..." -ForegroundColor Green
                 & gh issue close $num --repo $repo --comment "✅ Synchronisation des configurations terminée avec succès sur PC Windows."
+                Send-NtfyNotification -Title "✅ Synchronisation PC Terminée" -Message "Issue #$num ($repo) exécutée et clôturée avec succès sur le PC." -Tags "check,gear"
             }
         }
     }

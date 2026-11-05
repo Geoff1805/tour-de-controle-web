@@ -104,6 +104,11 @@ export class BridgeManager {
 				`Mission #${issueNumber} annulée et retirée de la file.`,
 				"success",
 			);
+			this.sendPushNotification(
+				"❌ Mission Batch Retirée",
+				`Mission #${issueNumber} annulée sur ${owner}/${repo} depuis la Tour de Contrôle.`,
+				"x,wastebasket",
+			);
 			await this.checkBatchStatus();
 		} catch (err) {
 			this.app.showToast(`Erreur annulation : ${err.message}`, "error");
@@ -218,6 +223,27 @@ export class BridgeManager {
 			.replace(/&/g, "&amp;")
 			.replace(/</g, "&lt;")
 			.replace(/>/g, "&gt;");
+	}
+
+	async sendPushNotification(
+		title,
+		message,
+		tags = "bell",
+		priority = "default",
+	) {
+		try {
+			await fetch("https://ntfy.sh/geoff_oracle_console_ia_9823", {
+				method: "POST",
+				headers: {
+					Title: title,
+					Priority: priority,
+					Tags: tags,
+				},
+				body: message,
+			});
+		} catch (err) {
+			console.warn("Erreur envoi notification ntfy:", err);
+		}
 	}
 
 	async checkVmJobsStatus() {
