@@ -15,3 +15,12 @@ android/app/src/main/assets/www/
 
 __pycache__/
 *.pyc
+
+# Ajouté automatiquement par Sentinel (Sécurité & Secrets)
+*.keystore
+*.jks
+*.pem
+*.key
+*.p12
+build/
+.gradle/
