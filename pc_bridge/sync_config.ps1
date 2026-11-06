@@ -11,7 +11,7 @@ param(
     [string]$Action = "sync", # "pull", "push", "sync", "watch"
     [string]$ConfigRepoDir = "$env:USERPROFILE\.gemini\antigravity_config_repo",
     [string]$LocalAgyDir = "$env:USERPROFILE\.gemini\antigravity",
-    [string]$RemoteRepo = "https://github.com/Geoff1805/tour-de-controle.git"
+    [string]$RemoteRepo = "https://github.com/Geoff1805/antigravity-config.git"
 )
 
 # Configuration Encodage UTF-8 Standard (Antigravity)
@@ -52,7 +52,7 @@ function Sync-FromGitToAgy {
         git pull origin main 2>$null
         
         # Copie des règles, skills, prompts et configs
-        $items = @("rules", "skills", "prompts", "mcp")
+        $items = @("rules", "skills", "prompts", "mcp", "config")
         foreach ($item in $items) {
             $src = Join-Path $ConfigRepoDir $item
             $dest = Join-Path $LocalAgyDir $item
@@ -116,7 +116,7 @@ function Sync-FromAgyToGit {
         Update-TailscaleConnectionInfo
 
         # Copie inverse (inclut mcp pour préserver les évolutions d'ai-council)
-        $items = @("rules", "skills", "prompts", "mcp")
+        $items = @("rules", "skills", "prompts", "mcp", "config")
         foreach ($item in $items) {
             $src = Join-Path $LocalAgyDir $item
             $dest = Join-Path $ConfigRepoDir $item

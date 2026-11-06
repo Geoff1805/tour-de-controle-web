@@ -248,7 +248,11 @@ export class BridgeManager {
 
 	async checkVmJobsStatus() {
 		try {
-			const token = "OkgjNYuMGwaMrRL-9Hk3D01v3iRy79-dw6TR8xB5lMM";
+			const token =
+				localStorage.getItem("tdc_workspace_token") ||
+				sessionStorage.getItem("tdc_workspace_token") ||
+				"";
+			if (!token) return;
 			const res = await fetch(
 				"https://workspacesearch-api.g-6e8.workers.dev/api/jobs/stats",
 				{
