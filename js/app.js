@@ -590,17 +590,62 @@ class TourDeControleApp {
 	}
 
 	getDefaultCatalog() {
-		// Catalogue invité neutre : seuls les dépôts publics sont listés ici.
+		// Catalogue invité neutre : dépôts publics actifs de l'écosystème Geoff1805.
 		// Le catalogue complet (dépôts privés + scripts Apps Script) est chargé
-		// depuis le dépôt privé "tour-de-controle" après connexion (PAT).
+		// dynamiquement depuis l'API GitHub et le dépôt privé "tour-de-controle" après connexion (PAT).
 		return [
+			{
+				name: "Bullix",
+				description:
+					"Assistant personnel Offline-First pour collectionneurs de BD (Franco-belge, Mangas, Comics).",
+				language: "Kotlin",
+				private: false,
+				html_url: "https://github.com/Geoff1805/Bullix",
+				default_branch: "main",
+			},
+			{
+				name: "InstallAPK",
+				description:
+					"Application Android pour mettre à jour et installer vos APKs GitHub en 1 clic.",
+				language: "Kotlin",
+				private: false,
+				html_url: "https://github.com/Geoff1805/InstallAPK",
+				default_branch: "main",
+			},
+			{
+				name: "Needix",
+				description:
+					"Application Android d'inventaire personnel et gestion de besoins.",
+				language: "Kotlin",
+				private: false,
+				html_url: "https://github.com/Geoff1805/Needix",
+				default_branch: "main",
+			},
 			{
 				name: "tour-de-controle-web",
 				description:
-					"Console Web Client-Side Zero-Knowledge hébergée sur GitHub Pages.",
+					"Console Web Client-Side Zero-Knowledge pour Tour de Contrôle Antigravity.",
 				language: "JavaScript",
 				private: false,
 				html_url: "https://github.com/Geoff1805/tour-de-controle-web",
+				default_branch: "main",
+			},
+			{
+				name: "WinSmartControl",
+				description:
+					"Contrôleur et superviseur de Smart App Control (SAC) sous Windows 11 Dev.",
+				language: "PowerShell",
+				private: false,
+				html_url: "https://github.com/Geoff1805/WinSmartControl",
+				default_branch: "main",
+			},
+			{
+				name: "cicd",
+				description:
+					"Usine logicielle CI/CD réutilisable avec agents IA autonomes (Issue Solver, PR Reviewer).",
+				language: "Python",
+				private: false,
+				html_url: "https://github.com/Geoff1805/cicd",
 				default_branch: "main",
 			},
 			{
