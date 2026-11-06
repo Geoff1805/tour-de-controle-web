@@ -67,6 +67,17 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView?, url: String?) {
                 super.onPageFinished(view, url)
+                if (url?.startsWith("file:///android_asset/www/") == true) {
+                    view?.evaluateJavascript(
+                        """
+                        (() => {
+                          document.querySelectorAll('.nav-tab:not([data-tab="chat"])').forEach((tab) => tab.style.display = 'none');
+                          document.querySelector('[data-tab="chat"]')?.click();
+                        })();
+                        """.trimIndent(),
+                        null,
+                    )
+                }
                 swipeRefresh.isRefreshing = false
             }
         }
